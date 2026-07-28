@@ -11,6 +11,9 @@
         .menu-container { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .menu-btn { padding: 25px 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; color: white; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .menu-btn:hover { transform: translateY(-3px); }
+        
+        /* Màu sắc nút Menu */
+        .btn-ds { background-color: #6c757d; grid-column: span 2; } /* Danh sách mặt bằng (Xám đậm) */
         .btn-all { background-color: #007bff; }
         .btn-paid { background-color: #28a745; }
         .btn-unpaid { background-color: #ffc107; color: #333; }
@@ -51,10 +54,10 @@
 <body>
 
     <div id="screenMenu">
-        <!-- ĐÃ ĐỔI TÊN APP CỐ ĐỊNH NHƯ YÊU CẦU -->
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
         <div class="menu-container">
-            <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách tổng</button>
+            <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng (Mẫu)</button>
+            <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách thu</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Danh sách đã đóng</button>
             <button class="menu-btn btn-unpaid" onclick="loadData('unpaid')">⚠️ Danh sách chưa đóng</button>
             <button class="menu-btn btn-action" onclick="loadData('mark_paid')">💳 Cập nhật đóng tiền</button>
@@ -69,7 +72,6 @@
             </div>
         </div>
         
-        <!-- TIÊU ĐỀ BẢNG SẼ ĐƯỢC CHÈN THÊM THÁNG/NĂM BẰNG JAVASCRIPT -->
         <h2 id="tableTitle">Danh Sách</h2>
         
         <div id="loading">Đang tải dữ liệu, vui lòng đợi...</div>
@@ -89,21 +91,22 @@
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzi-xzrh0lWTMSUqxV2kpcP1rgdfvSe_TuOpfH01eP4jUiuFQECp81xiPfdQAI8lSw/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxjebQ0oeP6sd1rGtVemzGSXu3o81prl3CyLd4Aq67A66V40rGUprS-JsQTVgCjyg/exec';
         
         let globalData = []; 
-        let currentSheetName = ""; // Biến lưu trữ tên sheet (Tháng/Năm)
+        let currentSheetName = ""; 
         let currentViewMode = 'all'; 
+        let loadedDataType = ""; // Biến để theo dõi xem đang load loại sheet nào ('ds' hay 'current')
 
         function showMenu() {
             document.getElementById('screenMenu').style.display = 'block';
             document.getElementById('screenTable').style.display = 'none';
         }
 
-        // Hàm cập nhật tiêu đề danh sách có chèn thêm Tháng/Năm
         function updateTableTitle() {
             const titles = {
-                'all': 'Danh Sách Tổng',
+                'ds': 'Danh Sách Mặt Bằng (Mẫu)',
+                'all': 'Danh Sách Thu',
                 'paid': 'Danh Sách Đã Đóng',
                 'unpaid': 'Danh Sách Chưa Đóng',
                 'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
@@ -114,6 +117,9 @@
 
         function loadData(viewMode) {
             currentViewMode = viewMode;
+            // Xác định xem user muốn lấy Mẫu hay lấy dữ liệu của Tháng
+            let targetType = (viewMode === 'ds') ? 'ds' : 'current'; 
+
             document.getElementById('screenMenu').style.display = 'none';
             document.getElementById('screenTable').style.display = 'block';
             document.getElementById('tableDiv').style.display = 'none';
@@ -121,18 +127,24 @@
             
             document.getElementById('searchInput').value = '';
 
-            if(globalData.length > 0) {
+            // Chỉ load lại dữ liệu nếu chuyển đổi qua lại giữa Mẫu và Tháng, nếu không thì dùng lại data cũ cho nhanh
+            if(globalData.length > 0 && loadedDataType === targetType) {
                 updateTableTitle();
                 renderTable();
             } else {
                 document.getElementById('tableTitle').innerText = "Đang tải dữ liệu...";
-                fetch(API_URL)
+                
+                // Gắn thêm tham số type vào đường link URL để báo cho Server biết
+                let fetchUrl = API_URL + "?type=" + targetType;
+
+                fetch(fetchUrl)
                 .then(response => response.json())
                 .then(res => {
                     if(res.success) {
                         globalData = res.data;
-                        currentSheetName = res.sheetName; // Lấy tên sheet (VD: T7-26) từ Google Script
-                        updateTableTitle(); // Cập nhật lại tiêu đề có chứa tháng năm
+                        currentSheetName = res.sheetName; 
+                        loadedDataType = targetType; // Lưu vết lại
+                        updateTableTitle(); 
                         renderTable();
                     } else {
                         document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
@@ -251,6 +263,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
+                    sheetName: currentSheetName, // Báo cho Server biết phải ghi vào Sheet nào
                     rowIndex: rowIndex,
                     updateType: 'note',
                     value: newNote
@@ -284,6 +297,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
+                    sheetName: currentSheetName, // Báo cho Server biết phải ghi vào Sheet nào
                     rowIndex: rowIndex,
                     updateType: 'status', 
                     value: newStatus
