@@ -8,7 +8,6 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
         h2 { text-align: center; color: #333; margin-bottom: 30px; }
         
-        /* Giao diện Menu */
         .menu-container { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .menu-btn { padding: 25px 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; color: white; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .menu-btn:hover { transform: translateY(-3px); }
@@ -17,7 +16,6 @@
         .btn-unpaid { background-color: #ffc107; color: #333; }
         .btn-action { background-color: #dc3545; grid-column: span 2; padding: 20px; font-size: 18px; }
 
-        /* Giao diện Bảng */
         .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; }
@@ -29,19 +27,16 @@
         .status-unpaid { background-color: #ffeeba; color: #856404; }
         .status-paid { background-color: #d4edda; color: #155724; }
         
-        /* Chỉnh sửa ghi chú */
         .note-container { display: flex; justify-content: space-between; align-items: center; min-width: 100px; }
         .edit-icon { cursor: pointer; margin-left: 8px; font-size: 14px; opacity: 0.5; transition: 0.2s; }
         .edit-icon:hover { opacity: 1; transform: scale(1.2); }
         .note-text { flex-grow: 1; }
         
-        /* Các nút và Ô tìm kiếm */
         .top-controls { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
         .back-btn { background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .search-box { flex-grow: 1; max-width: 400px; }
         .search-box input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         
-        /* Nút hành động trong bảng */
         .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
         .mark-btn:hover { background-color: #218838; }
         .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
@@ -49,17 +44,15 @@
         .col-action { width: 90px; text-align: center; }
 
         #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; font-size: 18px; display: none;}
-        
-        /* Dòng tổng cộng */
         tfoot { font-weight: bold; background-color: #e9ecef; }
         .total-row td { color: #d32f2f; font-size: 16px; }
     </style>
 </head>
 <body>
 
-    <!-- MÀN HÌNH 1: MENU -->
     <div id="screenMenu">
-        <h2>App Quản Lý Thu Phí</h2>
+        <!-- ĐÃ CẬP NHẬT ID ĐỂ HIỂN THỊ THÁNG ĐỘNG -->
+        <h2 id="mainAppTitle">App Quản Lý Thu Phí</h2> 
         <div class="menu-container">
             <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách tổng</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Danh sách đã đóng</button>
@@ -68,7 +61,6 @@
         </div>
     </div>
 
-    <!-- MÀN HÌNH 2: BẢNG DỮ LIỆU -->
     <div id="screenTable" style="display: none;">
         <div class="top-controls">
             <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
@@ -96,7 +88,7 @@
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbztGZVKJQfsCQAHSjwv6jr-2EztXuAZ_sKWpONw8Wa0hb_nV5Fz4x5CyC0AaRI9DqsQ/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzCN8oKh1xRhau7WSttjhsZVGflP1rwc5VjMHE-l_HXfVORxPl1KhN-wsTVyJB9sJCy/exec';
         
         let globalData = []; 
         let currentViewMode = 'all'; 
@@ -128,9 +120,16 @@
             } else {
                 fetch(API_URL)
                 .then(response => response.json())
-                .then(data => {
-                    globalData = data;
-                    renderTable();
+                .then(res => {
+                    // --- ĐÃ CẬP NHẬT LOGIC ĐỂ NHẬN JSON MỚI TỪ APP SCRIPT ---
+                    if(res.success) {
+                        globalData = res.data;
+                        // Gắn tên sheet đang thao tác lên tiêu đề chính
+                        document.getElementById('mainAppTitle').innerText = "App Quản Lý Thu Phí (" + res.sheetName + ")";
+                        renderTable();
+                    } else {
+                        document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
+                    }
                 })
                 .catch(error => {
                     document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!';
@@ -188,7 +187,6 @@
                     let val = row[header] !== undefined ? row[header] : '';
                     let strVal = String(val).trim().toLowerCase();
                     
-                    // --- ĐÃ THÊM LOGIC CÂY BÚT CHO CỘT GHI CHÚ ---
                     if (header.toLowerCase().includes('ghi chú')) {
                         tbodyHtml += `<td>
                             <div class="note-container">
@@ -231,37 +229,34 @@
             }
         }
 
-        // --- HÀM MỚI: CHỈNH SỬA GHI CHÚ ---
         function editNote(rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex);
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
             
             let newNote = prompt("Nhập ghi chú mới cho hộ này:", currentNote);
-            
-            // Nếu bấm Hủy hoặc không thay đổi nội dung thì không làm gì cả
             if (newNote === null || newNote === currentNote) return; 
 
             let noteElement = document.getElementById(`note-${rowIndex}`);
             let oldText = noteElement.innerText;
-            noteElement.innerText = "⏳ Đang lưu..."; // Hiệu ứng chờ
+            noteElement.innerText = "⏳ Đang lưu..."; 
 
             fetch(API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     rowIndex: rowIndex,
-                    updateType: 'note',  // Lệnh lưu ghi chú
+                    updateType: 'note',
                     value: newNote
                 })
             })
             .then(response => response.json())
             .then(res => {
                 if(res.success) {
-                    rowData['Ghi chú'] = newNote; // Cập nhật dữ liệu tạm trên trình duyệt
-                    renderTable(); // Load lại bảng để hiển thị đẹp
+                    rowData['Ghi chú'] = newNote; 
+                    renderTable(); 
                 } else {
                     alert("❌ Lỗi: " + res.message);
-                    noteElement.innerText = oldText; // Trả lại chữ cũ nếu lỗi
+                    noteElement.innerText = oldText; 
                 }
             })
             .catch(err => {
@@ -270,7 +265,6 @@
             });
         }
 
-        // Cập nhật trạng thái Thu/Hủy (đã điều chỉnh payload để tương thích GAS mới)
         function updateStatus(rowIndex, btnElement, newStatus) {
             let confirmMessage = newStatus === 'đã đóng' ? "Xác nhận hộ này ĐÃ ĐÓNG TIỀN?" : "Xác nhận HỦY THU TIỀN hộ này?";
             if(!confirm(confirmMessage)) return;
@@ -284,7 +278,7 @@
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     rowIndex: rowIndex,
-                    updateType: 'status', // Lệnh lưu trạng thái
+                    updateType: 'status', 
                     value: newStatus
                 })
             })
