@@ -3,90 +3,230 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý thu phí chợ</title>
+    <title>App Quản Lý Thu Phí</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; }
-        h2 { text-align: center; color: #333; }
-        .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
+        h2 { text-align: center; color: #333; margin-bottom: 30px; }
+        
+        /* Giao diện Menu */
+        .menu-container { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .menu-btn { padding: 25px 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; color: white; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .menu-btn:hover { transform: translateY(-3px); }
+        .btn-all { background-color: #007bff; }
+        .btn-paid { background-color: #28a745; }
+        .btn-unpaid { background-color: #ffc107; color: #333; }
+        .btn-action { background-color: #dc3545; grid-column: span 2; padding: 20px; font-size: 18px; }
+
+        /* Giao diện Bảng */
+        .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; }
-        th { background-color: #007bff; color: white; position: sticky; top: 0; }
+        th { background-color: #343a40; color: white; position: sticky; top: 0; }
         tr:nth-child(even) { background-color: #f2f2f2; }
         tr:hover { background-color: #e9ecef; }
-        .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; text-align: center; display: inline-block; min-width: 80px; }
-        .status-unpaid { background-color: #ffeeba; color: #856404; border: 1px solid #ffeeba; }
-        .status-paid { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; }
+        
+        .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; min-width: 80px; text-align: center;}
+        .status-unpaid { background-color: #ffeeba; color: #856404; }
+        .status-paid { background-color: #d4edda; color: #155724; }
+        
+        /* Các nút phụ trợ */
+        .back-btn { background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
+        .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .mark-btn:hover { background-color: #218838; }
+
+        #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; font-size: 18px; display: none;}
+        
+        /* Dòng tổng cộng */
+        tfoot { font-weight: bold; background-color: #e9ecef; }
+        .total-row td { color: #d32f2f; font-size: 16px; }
     </style>
 </head>
 <body>
 
-    <h2>Danh Sách Thu Phí Lô Sạp</h2>
-    
-    <div id="loading">Đang kết nối và tải dữ liệu từ Google Sheets...</div>
+    <!-- MÀN HÌNH 1: MENU -->
+    <div id="screenMenu">
+        <h2>App Quản Lý Thu Phí</h2>
+        <div class="menu-container">
+            <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách tổng</button>
+            <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Danh sách đã đóng</button>
+            <button class="menu-btn btn-unpaid" onclick="loadData('unpaid')">⚠️ Danh sách chưa đóng</button>
+            <button class="menu-btn btn-action" onclick="loadData('mark_paid')">💳 Cập nhật đóng tiền</button>
+        </div>
+    </div>
 
-    <div class="table-container">
-        <table id="dataTable" style="display: none;">
-            <thead>
-                <tr id="tableHead"></tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
+    <!-- MÀN HÌNH 2: BẢNG DỮ LIỆU -->
+    <div id="screenTable" style="display: none;">
+        <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
+        <h2 id="tableTitle">Danh Sách</h2>
+        
+        <div id="loading">Đang tải dữ liệu, vui lòng đợi...</div>
+
+        <div class="table-container" id="tableDiv" style="display: none;">
+            <table id="dataTable">
+                <thead>
+                    <tr id="tableHead"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+                <tfoot>
+                    <tr id="tableFoot" class="total-row"></tr>
+                </tfoot>
+            </table>
+        </div>
     </div>
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
         const API_URL = 'https://script.google.com/macros/s/AKfycbxEqlXyJ4uuzHTjwSeGahuE0a7zK2oc6or4wGM1qJ2CrQlIaxEkUr74OBN52tiq-rjD/exec';
+        
+        let globalData = []; // Biến lưu trữ dữ liệu để không phải tải lại nhiều lần
 
-        fetch(API_URL)
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dataTable').style.display = 'table';
+        function showMenu() {
+            document.getElementById('screenMenu').style.display = 'block';
+            document.getElementById('screenTable').style.display = 'none';
+        }
+
+        function loadData(viewMode) {
+            document.getElementById('screenMenu').style.display = 'none';
+            document.getElementById('screenTable').style.display = 'block';
+            document.getElementById('tableDiv').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // Cập nhật tiêu đề
+            const titles = {
+                'all': 'Danh Sách Tổng',
+                'paid': 'Danh Sách Đã Đóng',
+                'unpaid': 'Danh Sách Chưa Đóng',
+                'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
+            };
+            document.getElementById('tableTitle').innerText = titles[viewMode];
+
+            // Nếu đã tải dữ liệu rồi thì dùng luôn, chưa thì gọi API
+            if(globalData.length > 0) {
+                renderTable(viewMode);
+            } else {
+                fetch(API_URL)
+                .then(response => response.json())
+                .then(data => {
+                    globalData = data;
+                    renderTable(viewMode);
+                })
+                .catch(error => {
+                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!';
+                });
+            }
+        }
+
+        function renderTable(viewMode) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('tableDiv').style.display = 'block';
+            
+            let filteredData = globalData;
+
+            // Lọc dữ liệu dựa trên menu được chọn
+            if(viewMode === 'paid') {
+                filteredData = globalData.filter(row => (row['Trạng thái'] || '').trim().toLowerCase() === 'đã đóng');
+            } else if(viewMode === 'unpaid' || viewMode === 'mark_paid') {
+                filteredData = globalData.filter(row => (row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
+            }
+
+            if(filteredData.length === 0) {
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;">Không có dữ liệu</td></tr>';
+                document.getElementById('tableFoot').innerHTML = '';
+                return;
+            }
+
+            // Lấy tiêu đề cột (bỏ cột hệ thống _rowIndex)
+            let headers = Object.keys(filteredData[0]).filter(h => h !== '_rowIndex');
+            
+            // Xây dựng Header
+            let theadHtml = '';
+            headers.forEach(header => theadHtml += `<th>${header}</th>`);
+            if(viewMode === 'mark_paid') theadHtml += `<th>Thao tác</th>`; // Thêm cột hành động
+            document.getElementById('tableHead').innerHTML = headHtml;
+
+            // Xây dựng Body và tính Tổng tiền
+            let tbodyHtml = '';
+            let totalAmount = 0;
+            let amountColumnIndex = -1;
+
+            filteredData.forEach(row => {
+                tbodyHtml += `<tr>`;
+                headers.forEach((header, index) => {
+                    let val = row[header] !== undefined ? row[header] : '';
+                    
+                    // Xử lý cột trạng thái
+                    if (header.toLowerCase().includes('trạng thái')) {
+                        let statusClass = val.trim().toLowerCase() === 'chưa đóng' ? 'status-unpaid' : (val.trim().toLowerCase() === 'đã đóng' ? 'status-paid' : '');
+                        tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
+                    } else {
+                        tbodyHtml += `<td>${val}</td>`;
+                    }
+
+                    // Tính tổng cho cột "Thành tiền"
+                    if (header.toLowerCase() === 'thành tiền') {
+                        amountColumnIndex = index;
+                        // Chuyển "180.000" thành số 180000 để cộng
+                        let num = parseInt(val.toString().replace(/\./g, '').replace(/,/g, ''));
+                        if(!isNaN(num)) totalAmount += num;
+                    }
+                });
                 
-                if(data.length === 0) return;
-
-                // Tạo tiêu đề cột linh hoạt
-                const headers = Object.keys(data[0]);
-                const thead = document.getElementById('tableHead');
-                headers.forEach(header => {
-                    let th = document.createElement('th');
-                    th.textContent = header;
-                    thead.appendChild(th);
-                });
-
-                // Đổ dữ liệu vào hàng
-                const tbody = document.getElementById('tableBody');
-                data.forEach(row => {
-                    let tr = document.createElement('tr');
-                    headers.forEach(header => {
-                        let td = document.createElement('td');
-                        
-                        // Xử lý riêng giao diện cho cột "Trạng thái"
-                        if (header.toLowerCase().includes('trạng thái')) {
-                            let span = document.createElement('span');
-                            let val = (row[header] || '').trim().toLowerCase();
-                            span.textContent = row[header];
-                            if (val === 'chưa đóng') {
-                                span.className = 'status-badge status-unpaid';
-                            } else if (val === 'đã đóng') {
-                                span.className = 'status-badge status-paid';
-                            } else {
-                                span.textContent = row[header]; // Default
-                            }
-                            td.appendChild(span);
-                        } else {
-                            td.textContent = row[header] !== undefined ? row[header] : '';
-                        }
-                        tr.appendChild(td);
-                    });
-                    tbody.appendChild(tr);
-                });
-            })
-            .catch(error => {
-                document.getElementById('loading').textContent = 'Lỗi kết nối dữ liệu!';
-                console.error('Error fetching data:', error);
+                // Nếu ở chế độ "Cập nhật", hiện thêm nút
+                if(viewMode === 'mark_paid') {
+                    tbodyHtml += `<td><button class="mark-btn" onclick="markAsPaid(${row._rowIndex}, this)">Thu tiền</button></td>`;
+                }
+                tbodyHtml += `</tr>`;
             });
+            document.getElementById('tableBody').innerHTML = tbodyHtml;
+
+            // Xây dựng dòng Footer (Tổng cộng)
+            if(amountColumnIndex !== -1) {
+                let tfootHtml = `<td colspan="${amountColumnIndex}" style="text-align: right;"><strong>TỔNG CỘNG:</strong></td>`;
+                tfootHtml += `<td><strong>${totalAmount.toLocaleString('vi-VN')}</strong></td>`;
+                // Đổ các cột còn trống phía sau
+                let remainingCols = headers.length - amountColumnIndex - 1 + (viewMode === 'mark_paid' ? 1 : 0);
+                if(remainingCols > 0) tfootHtml += `<td colspan="${remainingCols}"></td>`;
+                document.getElementById('tableFoot').innerHTML = tfootHtml;
+            }
+        }
+
+        // Hàm Ghi dữ liệu về Google Sheets
+        function markAsPaid(rowIndex, btnElement) {
+            if(!confirm("Xác nhận hộ này ĐÃ ĐÓNG TIỀN?")) return;
+            
+            // Đổi text nút thành đang xử lý
+            let originalText = btnElement.innerText;
+            btnElement.innerText = "Đang xử lý...";
+            btnElement.disabled = true;
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Dùng text/plain để tránh lỗi CORS
+                body: JSON.stringify({
+                    rowIndex: rowIndex,
+                    status: 'đã đóng'
+                })
+            })
+            .then(response => response.json())
+            .then(res => {
+                if(res.success) {
+                    alert("✅ Đã cập nhật thành công!");
+                    // Cập nhật lại dữ liệu local và ẩn dòng đó đi
+                    let rowData = globalData.find(r => r._rowIndex === rowIndex);
+                    if(rowData) rowData['Trạng thái'] = 'đã đóng';
+                    btnElement.closest('tr').style.display = 'none'; // Ẩn dòng vừa thu tiền
+                } else {
+                    alert("❌ Lỗi: " + res.message);
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert("❌ Lỗi kết nối!");
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
+            });
+        }
     </script>
 </body>
 </html>
