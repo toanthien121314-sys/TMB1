@@ -47,7 +47,6 @@
         .undo-btn:hover { background-color: #c82333; }
         .col-action { width: 90px; text-align: center; }
         
-        /* CSS Giao diện Công nợ */
         .row-debt td { background-color: #fff3cd !important; } 
         .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
         .title-current { color: #333; }
@@ -101,8 +100,7 @@
     </div>
 
     <script>
-        // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwwLdrH3b7jHmu_pfscHihNCnpX9rBqHf_a-FoAKvJJq0NYQw78bi6RRezUA14hzn-z/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxQmLhLpOPftR5K66JSCe9b8jWPMWMes1M73iPWDzm0Yp2vPDmPmElRuBL3KMFXN4np/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -114,7 +112,6 @@
             document.getElementById('screenTable').style.display = 'none';
         }
 
-        // --- TÍNH NĂNG CHỐT SỔ ---
         function executeChotSo() {
             if(!confirm("⚠️ XÁC NHẬN CHỐT SỔ KỲ NÀY?\n\nHệ thống sẽ tự động:\n1. Gom hộ Đã Đóng (Tháng này + Nợ cũ) vào Sổ Đã Chốt.\n2. Gom hộ Chưa Đóng chuyển toàn bộ sang Sổ Nợ.\n3. Khởi tạo danh sách thu cho kỳ tiếp theo.")) return;
 
@@ -133,7 +130,7 @@
             .then(res => {
                 if(res.success) {
                     alert("✅ " + res.message);
-                    globalData = []; // Xóa cache để ép tải lại kỳ mới
+                    globalData = []; 
                     loadedDataType = "";
                     loadData('all');
                 } else {
@@ -141,13 +138,9 @@
                     showMenu();
                 }
             })
-            .catch(e => { 
-                alert("❌ Lỗi kết nối!"); 
-                showMenu(); 
-            });
+            .catch(e => { alert("❌ Lỗi kết nối!"); showMenu(); });
         }
 
-        // --- TÍNH NĂNG TẢI DANH SÁCH ĐÃ CHỐT ---
         function loadClosedList() {
             currentViewMode = 'closed_list';
             document.getElementById('screenMenu').style.display = 'none';
@@ -170,7 +163,7 @@
                     } else {
                         let html = '<tr><td colspan="10" style="text-align:center; padding: 20px;"><h3>Vui lòng chọn kỳ đã chốt để xem:</h3>';
                         list.forEach(name => {
-                             html += `<button class="mark-btn" style="margin: 10px; background: #17a2b8; padding: 12px 25px; width: auto;" onclick="loadClosedData('${name}')">📁 ${name}</button>`;
+                             html += `<button class="mark-btn" style="margin: 10px; background: #17a2b8; padding: 12px 25px; width: auto;" onclick="loadClosedData('${name}')">📁 ${name.replace('Chốt-', '')}</button>`;
                         });
                         html += '</td></tr>';
                         document.getElementById('tableBody').innerHTML = html;
@@ -183,7 +176,7 @@
             currentViewMode = 'closed_data';
             document.getElementById('tableDiv').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
-            document.getElementById('tableTitle').innerText = "Đang tải " + sheetName + "...";
+            document.getElementById('tableTitle').innerText = "Đang tải " + sheetName.replace('Chốt-', '') + "...";
 
             fetch(API_URL + "?type=closed_data&sheetName=" + sheetName)
             .then(r => r.json())
@@ -191,15 +184,14 @@
                 if(res.success) {
                     globalData = res.data;
                     currentSheetName = res.sheetName;
-                    document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName;
+                    document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName.replace('Chốt-', '');
                     renderTable();
                 }
             });
         }
 
         function updateTableTitle() {
-            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') return; // Bỏ qua nếu đang xem ds chốt
-            
+            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') return; 
             const titles = {
                 'ds': 'Danh Sách Mặt Bằng',
                 'all': 'Danh Sách Thu',
@@ -219,7 +211,6 @@
             document.getElementById('screenTable').style.display = 'block';
             document.getElementById('tableDiv').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
-            
             document.getElementById('searchInput').value = '';
 
             if(globalData.length > 0 && loadedDataType === targetType) {
@@ -282,9 +273,7 @@
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid');
             
             let theadHtml = '';
-            headers.forEach(header => {
-                theadHtml += `<th>${header}</th>`;
-            });
+            headers.forEach(header => { theadHtml += `<th>${header}</th>`; });
             if(isActionView) theadHtml += `<th class="col-action">Thao tác</th>`;
             document.getElementById('tableHead').innerHTML = theadHtml;
 
@@ -294,10 +283,12 @@
             let totalDebt = 0;
             let amountColumnIndex = -1;
 
+            // Xử lý Bóc Tách Tên Tháng/Năm cho cả Danh Sách Hiện Tại & Danh Sách Đã Chốt
             let extractedMonth = "Hiện tại";
             let extractedYear = "";
-            if(currentSheetName.includes('T') && currentSheetName !== 'DS' && currentViewMode !== 'closed_data') {
-                let p = currentSheetName.split(' ')[0].replace('T', '').split('-');
+            let baseName = currentSheetName.replace('Chốt-', ''); // Loại bỏ chữ Chốt nếu có
+            if(baseName.includes('T') && baseName !== 'DS') {
+                let p = baseName.split(' ')[0].replace('T', '').split('-');
                 if(p.length > 1) {
                     extractedMonth = p[0];
                     extractedYear = "20" + p[1];
@@ -305,15 +296,32 @@
             }
 
             filteredData.forEach(row => {
-                // Nếu là DS gốc, hoặc danh sách đã chốt, hoặc dữ liệu tháng này -> gộp chung vào currentDataList
-                if (currentViewMode === 'ds' || currentViewMode === 'closed_data' || row._sheetName.includes('T')) {
+                if (currentViewMode === 'ds') {
                     currentDataList.push(row);
-                } else if (row._sheetName === 'Nợ') {
-                    let m = row['Tháng'] || '?';
-                    let y = row['Năm'] || '?';
-                    let key = `T${m}-${y}`;
-                    if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
-                    debtGroups[key].rows.push(row);
+                } 
+                else if (currentViewMode === 'closed_data') {
+                    // CƠ CHẾ BÓC TÁCH CHO SỔ ĐÃ CHỐT DỰA VÀO CỘT THÁNG/NĂM
+                    let m = String(row['Tháng'] || '').trim();
+                    let y = String(row['Năm'] || '').trim();
+                    
+                    if (m === extractedMonth && y === extractedYear) {
+                        currentDataList.push(row);
+                    } else {
+                        let key = `T${m}-${y}`;
+                        if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                        debtGroups[key].rows.push(row);
+                    }
+                }
+                else { 
+                    if (row._sheetName.includes('T')) {
+                        currentDataList.push(row);
+                    } else if (row._sheetName === 'Nợ') {
+                        let m = row['Tháng'] || '?';
+                        let y = row['Năm'] || '?';
+                        let key = `T${m}-${y}`;
+                        if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                        debtGroups[key].rows.push(row);
+                    }
                 }
             });
 
@@ -336,11 +344,14 @@
                         let val = row[header] !== undefined ? row[header] : '';
                         let strVal = String(val).trim().toLowerCase();
                         
+                        // Khóa chức năng Edit ghi chú nếu đang xem Sổ Chốt
+                        let isClosed = (currentViewMode === 'closed_data');
+                        
                         if (header.toLowerCase().includes('ghi chú')) {
                             tbodyHtml += `<td>
                                 <div class="note-container">
                                     <span class="note-text" id="note-${row._sheetName}-${row._rowIndex}">${val}</span>
-                                    <span class="edit-icon" title="Sửa ghi chú" onclick="editNote('${row._sheetName}', ${row._rowIndex})">✏️</span>
+                                    ${!isClosed ? `<span class="edit-icon" title="Sửa ghi chú" onclick="editNote('${row._sheetName}', ${row._rowIndex})">✏️</span>` : ''}
                                 </div>
                             </td>`;
                         } 
@@ -370,7 +381,7 @@
                     tbodyHtml += `</tr>`;
                 });
 
-                if (currentViewMode !== 'ds' && currentViewMode !== 'closed_data' && titleText !== "") {
+                if (currentViewMode !== 'ds' && titleText !== "") {
                     let subTotalText = isDebt ? `Tổng nợ tháng ${debtMonth} năm ${debtYear}` : `Tổng tháng ${extractedMonth} năm ${extractedYear}`;
                     tbodyHtml += `
                     <tr class="subtotal-row ${subtotalClass}">
@@ -381,16 +392,13 @@
                 }
             }
 
-            // 1. Vẽ Khối Danh sách chính (Tháng hiện tại, DS, hoặc Sổ đã chốt)
+            // 1. Nhóm Tháng chính (Áp dụng cho cả Danh sách thu và Danh sách Chốt)
             if (currentDataList.length > 0) {
-                let currentTitle = "";
-                if (currentViewMode === 'all' || currentViewMode === 'paid' || currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
-                    currentTitle = `Tháng ${extractedMonth} năm ${extractedYear}`;
-                }
+                let currentTitle = (currentViewMode === 'ds') ? "" : `Tháng ${extractedMonth} năm ${extractedYear}`;
                 renderRowGroup(currentDataList, currentTitle, false, null, null);
             }
 
-            // 2. Vẽ dữ liệu Nợ cũ
+            // 2. Nhóm Nợ cũ
             let debtKeys = Object.keys(debtGroups);
             if (debtKeys.length > 0) {
                 tbodyHtml += `<tr class="section-divider title-debt"><td colspan="${totalColumns}">Nợ</td></tr>`;
@@ -417,21 +425,27 @@
 
             document.getElementById('tableBody').innerHTML = tbodyHtml;
 
-            // Xây dựng Footer
+            // Bảng tổng cộng cuối cùng
             if(amountColumnIndex !== -1) {
                 let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                 let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
                 
-                let grandTotal = totalCurrent + totalDebt;
-                let footerLabel = (currentViewMode === 'ds' || currentViewMode === 'closed_data') ? 'TỔNG CỘNG:' : 'TỔNG CỘNG THU:';
-                
-                document.getElementById('tableFoot').innerHTML = `
-                    <tr class="total-row">
-                        <td colspan="${amountColumnIndex}" style="text-align: right;">${footerLabel}</td>
-                        <td>${grandTotal.toLocaleString('vi-VN')}</td>
-                        ${emptyCells}
-                    </tr>
-                `;
+                if (currentViewMode === 'ds') {
+                    document.getElementById('tableFoot').innerHTML = `
+                        <tr class="total-row">
+                            <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG:</td>
+                            <td>${totalCurrent.toLocaleString('vi-VN')}</td>
+                            ${emptyCells}
+                        </tr>`;
+                } else {
+                    let grandTotal = totalCurrent + totalDebt;
+                    document.getElementById('tableFoot').innerHTML = `
+                        <tr class="total-row">
+                            <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG THU:</td>
+                            <td>${grandTotal.toLocaleString('vi-VN')}</td>
+                            ${emptyCells}
+                        </tr>`;
+                }
             } else {
                  document.getElementById('tableFoot').innerHTML = ''; 
             }
@@ -458,7 +472,7 @@
                     value: newNote
                 })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(res => {
                 if(res.success) {
                     rowData['Ghi chú'] = newNote; 
@@ -468,10 +482,7 @@
                     noteElement.innerText = oldText; 
                 }
             })
-            .catch(err => {
-                alert("❌ Lỗi kết nối!");
-                noteElement.innerText = oldText;
-            });
+            .catch(err => { alert("❌ Lỗi kết nối!"); noteElement.innerText = oldText; });
         }
 
         function updateStatus(rowSheetName, rowIndex, btnElement, newStatus) {
@@ -492,7 +503,7 @@
                     value: newStatus
                 })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(res => {
                 if(res.success) {
                     let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
@@ -504,11 +515,7 @@
                     btnElement.disabled = false;
                 }
             })
-            .catch(err => {
-                alert("❌ Lỗi kết nối!");
-                btnElement.innerText = originalText;
-                btnElement.disabled = false;
-            });
+            .catch(err => { alert("❌ Lỗi kết nối!"); btnElement.innerText = originalText; btnElement.disabled = false; });
         }
     </script>
 </body>
