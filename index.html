@@ -116,7 +116,7 @@
             }
         }
 
-        function renderTable(viewMode) {
+function renderTable(viewMode) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('tableDiv').style.display = 'block';
             
@@ -124,13 +124,14 @@
 
             // Lọc dữ liệu dựa trên menu được chọn
             if(viewMode === 'paid') {
-                filteredData = globalData.filter(row => (row['Trạng thái'] || '').trim().toLowerCase() === 'đã đóng');
+                filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'đã đóng');
             } else if(viewMode === 'unpaid' || viewMode === 'mark_paid') {
-                filteredData = globalData.filter(row => (row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
+                filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
             }
 
             if(filteredData.length === 0) {
-                document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;">Không có dữ liệu</td></tr>';
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 20px;">Không có dữ liệu</td></tr>';
+                document.getElementById('tableHead').innerHTML = '';
                 document.getElementById('tableFoot').innerHTML = '';
                 return;
             }
@@ -141,8 +142,10 @@
             // Xây dựng Header
             let theadHtml = '';
             headers.forEach(header => theadHtml += `<th>${header}</th>`);
-            if(viewMode === 'mark_paid') theadHtml += `<th>Thao tác</th>`; // Thêm cột hành động
-            document.getElementById('tableHead').innerHTML = headHtml;
+            if(viewMode === 'mark_paid') theadHtml += `<th>Thao tác</th>`;
+            
+            // ĐÃ SỬA LỖI TYPO Ở DÒNG DƯỚI ĐÂY (headHtml -> theadHtml)
+            document.getElementById('tableHead').innerHTML = theadHtml; 
 
             // Xây dựng Body và tính Tổng tiền
             let tbodyHtml = '';
@@ -153,10 +156,11 @@
                 tbodyHtml += `<tr>`;
                 headers.forEach((header, index) => {
                     let val = row[header] !== undefined ? row[header] : '';
+                    let strVal = String(val).trim().toLowerCase(); // Chuyển về chuỗi để xử lý an toàn
                     
                     // Xử lý cột trạng thái
                     if (header.toLowerCase().includes('trạng thái')) {
-                        let statusClass = val.trim().toLowerCase() === 'chưa đóng' ? 'status-unpaid' : (val.trim().toLowerCase() === 'đã đóng' ? 'status-paid' : '');
+                        let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
                         tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
                     } else {
                         tbodyHtml += `<td>${val}</td>`;
@@ -166,7 +170,7 @@
                     if (header.toLowerCase() === 'thành tiền') {
                         amountColumnIndex = index;
                         // Chuyển "180.000" thành số 180000 để cộng
-                        let num = parseInt(val.toString().replace(/\./g, '').replace(/,/g, ''));
+                        let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
                         if(!isNaN(num)) totalAmount += num;
                     }
                 });
