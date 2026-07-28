@@ -35,8 +35,12 @@
         .search-box { flex-grow: 1; max-width: 400px; }
         .search-box input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         
-        .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        /* Nút hành động trong bảng */
+        .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
         .mark-btn:hover { background-color: #218838; }
+        .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .undo-btn:hover { background-color: #c82333; }
+        .col-action { width: 90px; text-align: center; }
 
         #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; font-size: 18px; display: none;}
         
@@ -89,7 +93,7 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbykjMjhKDvpySMRMxmXjjE5nGW7kf5_N_CXLw-6DfnUOgp13d8kIWCQtOcNbjZL4thZ/exec';
         
         let globalData = []; 
-        let currentViewMode = 'all'; // Lưu lại chế độ đang xem
+        let currentViewMode = 'all'; 
 
         function showMenu() {
             document.getElementById('screenMenu').style.display = 'block';
@@ -103,12 +107,11 @@
             document.getElementById('tableDiv').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
             
-            // Xóa ô tìm kiếm mỗi khi vào danh sách mới
             document.getElementById('searchInput').value = '';
 
             const titles = {
                 'all': 'Danh Sách Tổng',
-                'paid': 'Danh Sách Đã Đóng',
+                'paid': 'Danh Sách Đã Đóng (Có thể Hoàn tác)',
                 'unpaid': 'Danh Sách Chưa Đóng',
                 'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
             };
@@ -134,22 +137,19 @@
             document.getElementById('tableDiv').style.display = 'block';
             
             let filteredData = globalData;
-            
-            // 1. Lấy từ khóa tìm kiếm
             let searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
 
-            // 2. Lọc theo Menu đã chọn
+            // 1. Lọc theo Menu
             if(currentViewMode === 'paid') {
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'đã đóng');
             } else if(currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
             }
 
-            // 3. Lọc theo Từ khóa tìm kiếm (Lọc qua tất cả các cột)
+            // 2. Lọc theo Tìm kiếm
             if (searchTerm !== '') {
                 filteredData = filteredData.filter(row => {
                     return Object.keys(row).some(key => {
-                        // Bỏ qua cột ẩn _rowIndex
                         if (key === '_rowIndex') return false; 
                         let cellValue = String(row[key] || '').toLowerCase();
                         return cellValue.includes(searchTerm);
@@ -158,20 +158,21 @@
             }
 
             if(filteredData.length === 0) {
-                document.getElementById('tableBody').innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 20px;">Không tìm thấy dữ liệu phù hợp</td></tr>';
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 20px;">Không có dữ liệu</td></tr>';
                 document.getElementById('tableHead').innerHTML = '';
                 document.getElementById('tableFoot').innerHTML = '';
                 return;
             }
 
             let headers = Object.keys(filteredData[0]).filter(h => h !== '_rowIndex');
+            let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid');
             
             // Xây dựng Header
             let theadHtml = '';
             headers.forEach(header => {
                 theadHtml += `<th>${header}</th>`;
             });
-            if(currentViewMode === 'mark_paid') theadHtml += `<th>Thao tác</th>`;
+            if(isActionView) theadHtml += `<th class="col-action">Thao tác</th>`;
             document.getElementById('tableHead').innerHTML = theadHtml;
 
             // Xây dựng Body và tính Tổng tiền
@@ -199,9 +200,13 @@
                     }
                 });
                 
+                // Hiển thị nút Thu tiền hoặc nút Hoàn tác tùy theo chế độ
                 if(currentViewMode === 'mark_paid') {
-                    tbodyHtml += `<td><button class="mark-btn" onclick="markAsPaid(${row._rowIndex}, this)">Thu tiền</button></td>`;
+                    tbodyHtml += `<td class="col-action"><button class="mark-btn" onclick="updateStatus(${row._rowIndex}, this, 'đã đóng')">Thu tiền</button></td>`;
+                } else if (currentViewMode === 'paid') {
+                    tbodyHtml += `<td class="col-action"><button class="undo-btn" onclick="updateStatus(${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                 }
+                
                 tbodyHtml += `</tr>`;
             });
             document.getElementById('tableBody').innerHTML = tbodyHtml;
@@ -211,15 +216,16 @@
                 let tfootHtml = `<td colspan="${amountColumnIndex}" style="text-align: right;"><strong>TỔNG CỘNG:</strong></td>`;
                 tfootHtml += `<td><strong>${totalAmount.toLocaleString('vi-VN')}</strong></td>`;
                 
-                let remainingCols = headers.length - amountColumnIndex - 1 + (currentViewMode === 'mark_paid' ? 1 : 0);
+                let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                 if(remainingCols > 0) tfootHtml += `<td colspan="${remainingCols}"></td>`;
                 document.getElementById('tableFoot').innerHTML = tfootHtml;
             }
         }
 
-        // Hàm Ghi dữ liệu về Google Sheets
-        function markAsPaid(rowIndex, btnElement) {
-            if(!confirm("Xác nhận hộ này ĐÃ ĐÓNG TIỀN?")) return;
+        // Hàm Ghi dữ liệu 2 chiều (Thu tiền hoặc Hủy thu)
+        function updateStatus(rowIndex, btnElement, newStatus) {
+            let confirmMessage = newStatus === 'đã đóng' ? "Xác nhận hộ này ĐÃ ĐÓNG TIỀN?" : "Xác nhận HỦY THU TIỀN hộ này (chuyển về Chưa đóng)?";
+            if(!confirm(confirmMessage)) return;
             
             let originalText = btnElement.innerText;
             btnElement.innerText = "Đang xử lý...";
@@ -230,7 +236,7 @@
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     rowIndex: rowIndex,
-                    status: 'đã đóng'
+                    status: newStatus
                 })
             })
             .then(response => response.json())
@@ -238,9 +244,9 @@
                 if(res.success) {
                     // Cập nhật lại dữ liệu gốc
                     let rowData = globalData.find(r => r._rowIndex === rowIndex);
-                    if(rowData) rowData['Trạng thái'] = 'đã đóng';
+                    if(rowData) rowData['Trạng thái'] = newStatus;
                     
-                    // Render lại bảng để biến mất khỏi danh sách chưa đóng và TÍNH LẠI TỔNG
+                    // Vẽ lại bảng (Hàng vừa đổi trạng thái sẽ tự động biến mất khỏi danh sách hiện tại)
                     renderTable();
                 } else {
                     alert("❌ Lỗi: " + res.message);
