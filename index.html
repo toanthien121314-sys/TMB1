@@ -29,6 +29,12 @@
         .status-unpaid { background-color: #ffeeba; color: #856404; }
         .status-paid { background-color: #d4edda; color: #155724; }
         
+        /* Chỉnh sửa ghi chú */
+        .note-container { display: flex; justify-content: space-between; align-items: center; min-width: 100px; }
+        .edit-icon { cursor: pointer; margin-left: 8px; font-size: 14px; opacity: 0.5; transition: 0.2s; }
+        .edit-icon:hover { opacity: 1; transform: scale(1.2); }
+        .note-text { flex-grow: 1; }
+        
         /* Các nút và Ô tìm kiếm */
         .top-controls { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
         .back-btn { background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
@@ -90,7 +96,7 @@
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbykjMjhKDvpySMRMxmXjjE5nGW7kf5_N_CXLw-6DfnUOgp13d8kIWCQtOcNbjZL4thZ/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbztGZVKJQfsCQAHSjwv6jr-2EztXuAZ_sKWpONw8Wa0hb_nV5Fz4x5CyC0AaRI9DqsQ/exec';
         
         let globalData = []; 
         let currentViewMode = 'all'; 
@@ -111,7 +117,7 @@
 
             const titles = {
                 'all': 'Danh Sách Tổng',
-                'paid': 'Danh Sách Đã Đóng (Có thể Hoàn tác)',
+                'paid': 'Danh Sách Đã Đóng',
                 'unpaid': 'Danh Sách Chưa Đóng',
                 'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
             };
@@ -139,14 +145,12 @@
             let filteredData = globalData;
             let searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
 
-            // 1. Lọc theo Menu
             if(currentViewMode === 'paid') {
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'đã đóng');
             } else if(currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
             }
 
-            // 2. Lọc theo Tìm kiếm
             if (searchTerm !== '') {
                 filteredData = filteredData.filter(row => {
                     return Object.keys(row).some(key => {
@@ -167,7 +171,6 @@
             let headers = Object.keys(filteredData[0]).filter(h => h !== '_rowIndex');
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid');
             
-            // Xây dựng Header
             let theadHtml = '';
             headers.forEach(header => {
                 theadHtml += `<th>${header}</th>`;
@@ -175,7 +178,6 @@
             if(isActionView) theadHtml += `<th class="col-action">Thao tác</th>`;
             document.getElementById('tableHead').innerHTML = theadHtml;
 
-            // Xây dựng Body và tính Tổng tiền
             let tbodyHtml = '';
             let totalAmount = 0;
             let amountColumnIndex = -1;
@@ -186,7 +188,16 @@
                     let val = row[header] !== undefined ? row[header] : '';
                     let strVal = String(val).trim().toLowerCase();
                     
-                    if (header.toLowerCase().includes('trạng thái')) {
+                    // --- ĐÃ THÊM LOGIC CÂY BÚT CHO CỘT GHI CHÚ ---
+                    if (header.toLowerCase().includes('ghi chú')) {
+                        tbodyHtml += `<td>
+                            <div class="note-container">
+                                <span class="note-text" id="note-${row._rowIndex}">${val}</span>
+                                <span class="edit-icon" title="Sửa ghi chú" onclick="editNote(${row._rowIndex})">✏️</span>
+                            </div>
+                        </td>`;
+                    } 
+                    else if (header.toLowerCase().includes('trạng thái')) {
                         let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
                         tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
                     } else {
@@ -200,7 +211,6 @@
                     }
                 });
                 
-                // Hiển thị nút Thu tiền hoặc nút Hoàn tác tùy theo chế độ
                 if(currentViewMode === 'mark_paid') {
                     tbodyHtml += `<td class="col-action"><button class="mark-btn" onclick="updateStatus(${row._rowIndex}, this, 'đã đóng')">Thu tiền</button></td>`;
                 } else if (currentViewMode === 'paid') {
@@ -211,7 +221,6 @@
             });
             document.getElementById('tableBody').innerHTML = tbodyHtml;
 
-            // Xây dựng Footer (Tổng cộng)
             if(amountColumnIndex !== -1) {
                 let tfootHtml = `<td colspan="${amountColumnIndex}" style="text-align: right;"><strong>TỔNG CỘNG:</strong></td>`;
                 tfootHtml += `<td><strong>${totalAmount.toLocaleString('vi-VN')}</strong></td>`;
@@ -222,9 +231,48 @@
             }
         }
 
-        // Hàm Ghi dữ liệu 2 chiều (Thu tiền hoặc Hủy thu)
+        // --- HÀM MỚI: CHỈNH SỬA GHI CHÚ ---
+        function editNote(rowIndex) {
+            let rowData = globalData.find(r => r._rowIndex === rowIndex);
+            let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
+            
+            let newNote = prompt("Nhập ghi chú mới cho hộ này:", currentNote);
+            
+            // Nếu bấm Hủy hoặc không thay đổi nội dung thì không làm gì cả
+            if (newNote === null || newNote === currentNote) return; 
+
+            let noteElement = document.getElementById(`note-${rowIndex}`);
+            let oldText = noteElement.innerText;
+            noteElement.innerText = "⏳ Đang lưu..."; // Hiệu ứng chờ
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    rowIndex: rowIndex,
+                    updateType: 'note',  // Lệnh lưu ghi chú
+                    value: newNote
+                })
+            })
+            .then(response => response.json())
+            .then(res => {
+                if(res.success) {
+                    rowData['Ghi chú'] = newNote; // Cập nhật dữ liệu tạm trên trình duyệt
+                    renderTable(); // Load lại bảng để hiển thị đẹp
+                } else {
+                    alert("❌ Lỗi: " + res.message);
+                    noteElement.innerText = oldText; // Trả lại chữ cũ nếu lỗi
+                }
+            })
+            .catch(err => {
+                alert("❌ Lỗi kết nối!");
+                noteElement.innerText = oldText;
+            });
+        }
+
+        // Cập nhật trạng thái Thu/Hủy (đã điều chỉnh payload để tương thích GAS mới)
         function updateStatus(rowIndex, btnElement, newStatus) {
-            let confirmMessage = newStatus === 'đã đóng' ? "Xác nhận hộ này ĐÃ ĐÓNG TIỀN?" : "Xác nhận HỦY THU TIỀN hộ này (chuyển về Chưa đóng)?";
+            let confirmMessage = newStatus === 'đã đóng' ? "Xác nhận hộ này ĐÃ ĐÓNG TIỀN?" : "Xác nhận HỦY THU TIỀN hộ này?";
             if(!confirm(confirmMessage)) return;
             
             let originalText = btnElement.innerText;
@@ -236,17 +284,15 @@
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     rowIndex: rowIndex,
-                    status: newStatus
+                    updateType: 'status', // Lệnh lưu trạng thái
+                    value: newStatus
                 })
             })
             .then(response => response.json())
             .then(res => {
                 if(res.success) {
-                    // Cập nhật lại dữ liệu gốc
                     let rowData = globalData.find(r => r._rowIndex === rowIndex);
                     if(rowData) rowData['Trạng thái'] = newStatus;
-                    
-                    // Vẽ lại bảng (Hàng vừa đổi trạng thái sẽ tự động biến mất khỏi danh sách hiện tại)
                     renderTable();
                 } else {
                     alert("❌ Lỗi: " + res.message);
