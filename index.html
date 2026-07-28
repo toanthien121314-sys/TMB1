@@ -44,11 +44,15 @@
         .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
         .undo-btn:hover { background-color: #c82333; }
         .col-action { width: 90px; text-align: center; }
-        .row-debt td { background-color: #fff3cd !important; } /* Highlight nhẹ dòng của Nợ */
+        
+        /* Chỉnh CSS cho Vách ngăn và Footer Kế toán */
+        .row-debt td { background-color: #fff3cd !important; } 
+        .section-divider td { background-color: #e2e3e5 !important; color: #383d41; font-weight: bold; font-size: 15px; text-align: center; padding: 12px; letter-spacing: 1px; }
+        tfoot { background-color: #f8f9fa; }
+        .subtotal-row td { color: #555; border-bottom: 1px dashed #ccc;}
+        .total-row td { color: #d32f2f; font-size: 18px; font-weight: bold; background-color: #e9ecef;}
 
         #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; font-size: 18px; display: none;}
-        tfoot { font-weight: bold; background-color: #e9ecef; }
-        .total-row td { color: #d32f2f; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -82,16 +86,14 @@
                     <tr id="tableHead"></tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
-                <tfoot>
-                    <tr id="tableFoot" class="total-row"></tr>
-                </tfoot>
+                <tfoot id="tableFoot"></tfoot>
             </table>
         </div>
     </div>
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbw7J_TE8PZ1dooY1K1aQWRgO4a0EsbSC2uOC94SNefR-8k9vU5KgSFAmfznSs8L0ZYZ/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbybIJG6O7ESHssYwVx6kpQv2QL-5YG4FOKGAKSV1CZ7xiGpfmozDqfpF9uoBwx_jXHn/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -182,7 +184,6 @@
                 return;
             }
 
-            // Bỏ các cột hệ thống khi hiển thị
             let headers = Object.keys(filteredData[0]).filter(h => h !== '_rowIndex' && h !== '_sheetName');
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid');
             
@@ -194,11 +195,24 @@
             document.getElementById('tableHead').innerHTML = theadHtml;
 
             let tbodyHtml = '';
-            let totalAmount = 0;
+            // Khai báo biến tính tổng tách biệt
+            let totalCurrent = 0;
+            let totalDebt = 0;
             let amountColumnIndex = -1;
+            
+            let currentSection = ""; // Biến để theo dõi vách ngăn
 
             filteredData.forEach(row => {
-                // Thêm class row-debt để tô nền màu vàng nhạt cho các dòng công nợ dễ nhìn
+                // Thêm vách ngăn (Divider) nếu chuyển từ danh sách Tháng sang Nợ
+                if (currentViewMode !== 'ds' && currentSection !== row._sheetName) {
+                    currentSection = row._sheetName;
+                    let colspanTotal = headers.length + (isActionView ? 1 : 0);
+                    let sectionTitle = (currentSection === 'Nợ') 
+                        ? '⚠️ DANH SÁCH CÔNG NỢ TỪ CÁC THÁNG TRƯỚC' 
+                        : `📅 DANH SÁCH PHÁT SINH KỲ NÀY`;
+                    tbodyHtml += `<tr class="section-divider"><td colspan="${colspanTotal}">${sectionTitle}</td></tr>`;
+                }
+
                 let rowClass = (row._sheetName === 'Nợ') ? 'row-debt' : '';
                 tbodyHtml += `<tr class="${rowClass}">`;
                 
@@ -221,10 +235,17 @@
                         tbodyHtml += `<td>${val}</td>`;
                     }
 
+                    // Tách biệt tính tổng cho Tháng này và Công nợ
                     if (header.toLowerCase() === 'thành tiền') {
                         amountColumnIndex = index;
                         let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
-                        if(!isNaN(num)) totalAmount += num;
+                        if(!isNaN(num)) {
+                            if (row._sheetName === 'Nợ') {
+                                totalDebt += num;
+                            } else {
+                                totalCurrent += num;
+                            }
+                        }
                     }
                 });
                 
@@ -238,17 +259,42 @@
             });
             document.getElementById('tableBody').innerHTML = tbodyHtml;
 
+            // Xây dựng Footer Kế toán (Tính tổng 3 cấp)
             if(amountColumnIndex !== -1) {
-                let tfootHtml = `<td colspan="${amountColumnIndex}" style="text-align: right;"><strong>TỔNG CỘNG:</strong></td>`;
-                tfootHtml += `<td><strong>${totalAmount.toLocaleString('vi-VN')}</strong></td>`;
-                
                 let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
-                if(remainingCols > 0) tfootHtml += `<td colspan="${remainingCols}"></td>`;
+                let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
+                
+                let tfootHtml = ``;
+                
+                // Chỉ hiển thị báo cáo chi tiết nếu không phải là đang xem mẫu DS
+                if (currentViewMode !== 'ds') {
+                    tfootHtml += `
+                        <tr class="subtotal-row">
+                            <td colspan="${amountColumnIndex}" style="text-align: right; font-weight: bold;">TỔNG PHÁT SINH KỲ NÀY:</td>
+                            <td style="color: #007bff; font-weight: bold;">${totalCurrent.toLocaleString('vi-VN')}</td>
+                            ${emptyCells}
+                        </tr>
+                        <tr class="subtotal-row">
+                            <td colspan="${amountColumnIndex}" style="text-align: right; font-weight: bold;">TỔNG CÔNG NỢ CŨ:</td>
+                            <td style="color: #ff9800; font-weight: bold;">${totalDebt.toLocaleString('vi-VN')}</td>
+                            ${emptyCells}
+                        </tr>
+                    `;
+                }
+                
+                // Dòng TỔNG CỘNG cuối cùng
+                let grandTotal = (currentViewMode === 'ds') ? totalCurrent : (totalCurrent + totalDebt);
+                tfootHtml += `
+                    <tr class="total-row">
+                        <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG ĐANG HIỂN THỊ:</td>
+                        <td>${grandTotal.toLocaleString('vi-VN')}</td>
+                        ${emptyCells}
+                    </tr>
+                `;
                 document.getElementById('tableFoot').innerHTML = tfootHtml;
             }
         }
 
-        // Cập nhật lấy chính xác tên Sheet của dòng đó để ghi dữ liệu
         function editNote(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
@@ -264,7 +310,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
-                    sheetName: rowSheetName, // Bắn đích danh tên Sheet lên Server
+                    sheetName: rowSheetName, 
                     rowIndex: rowIndex,
                     updateType: 'note',
                     value: newNote
@@ -298,7 +344,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
-                    sheetName: rowSheetName, // Bắn đích danh tên Sheet lên Server
+                    sheetName: rowSheetName,
                     rowIndex: rowIndex,
                     updateType: 'status', 
                     value: newStatus
