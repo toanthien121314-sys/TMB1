@@ -16,7 +16,9 @@
         .btn-all { background-color: #007bff; }
         .btn-paid { background-color: #28a745; }
         .btn-unpaid { background-color: #ffc107; color: #333; }
+        .btn-closed { background-color: white; color: #333; border: 2px solid #ccc; }
         .btn-action { background-color: #dc3545; grid-column: span 2; padding: 20px; font-size: 18px; }
+        .btn-chotso { background-color: #343a40; grid-column: span 2; padding: 15px; margin-top: 15px; font-size: 16px;}
 
         .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
@@ -65,12 +67,13 @@
     <div id="screenMenu">
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
         <div class="menu-container">
-            <!-- Đã đổi tên nút tinh gọn hơn -->
             <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng</button>
             <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách thu</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Danh sách đã đóng</button>
             <button class="menu-btn btn-unpaid" onclick="loadData('unpaid')">⚠️ Danh sách chưa đóng</button>
+            <button class="menu-btn btn-closed" onclick="loadClosedList()">📁 Danh sách đã chốt</button>
             <button class="menu-btn btn-action" onclick="loadData('mark_paid')">💳 Cập nhật đóng tiền</button>
+            <button class="menu-btn btn-chotso" onclick="executeChotSo()">🔒 CHỐT SỔ & CHUYỂN KỲ MỚI</button>
         </div>
     </div>
 
@@ -99,7 +102,7 @@
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyYQ226LpL5wq_Sj591aBBEdTJxRjJFomx1nsEuhuJFoWYOYocTSiTLsxnscD_ViYbM/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwwLdrH3b7jHmu_pfscHihNCnpX9rBqHf_a-FoAKvJJq0NYQw78bi6RRezUA14hzn-z/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -111,15 +114,99 @@
             document.getElementById('screenTable').style.display = 'none';
         }
 
+        // --- TÍNH NĂNG CHỐT SỔ ---
+        function executeChotSo() {
+            if(!confirm("⚠️ XÁC NHẬN CHỐT SỔ KỲ NÀY?\n\nHệ thống sẽ tự động:\n1. Gom hộ Đã Đóng (Tháng này + Nợ cũ) vào Sổ Đã Chốt.\n2. Gom hộ Chưa Đóng chuyển toàn bộ sang Sổ Nợ.\n3. Khởi tạo danh sách thu cho kỳ tiếp theo.")) return;
+
+            document.getElementById('screenMenu').style.display = 'none';
+            document.getElementById('screenTable').style.display = 'block';
+            document.getElementById('tableDiv').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('tableTitle').innerText = "Đang xử lý chốt sổ, vui lòng không tắt trang...";
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ updateType: 'chot_so' })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if(res.success) {
+                    alert("✅ " + res.message);
+                    globalData = []; // Xóa cache để ép tải lại kỳ mới
+                    loadedDataType = "";
+                    loadData('all');
+                } else {
+                    alert("❌ Lỗi: " + res.message);
+                    showMenu();
+                }
+            })
+            .catch(e => { 
+                alert("❌ Lỗi kết nối!"); 
+                showMenu(); 
+            });
+        }
+
+        // --- TÍNH NĂNG TẢI DANH SÁCH ĐÃ CHỐT ---
+        function loadClosedList() {
+            currentViewMode = 'closed_list';
+            document.getElementById('screenMenu').style.display = 'none';
+            document.getElementById('screenTable').style.display = 'block';
+            document.getElementById('tableDiv').style.display = 'block';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('tableTitle').innerText = "Danh Sách Đã Chốt";
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('tableFoot').innerHTML = '';
+            document.getElementById('tableHead').innerHTML = '';
+
+            fetch(API_URL + "?type=closed_list")
+            .then(r => r.json())
+            .then(res => {
+                document.getElementById('loading').style.display = 'none';
+                if(res.success) {
+                    let list = res.data;
+                    if(list.length === 0) {
+                        document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">Chưa có kỳ nào được chốt trong hệ thống.</td></tr>';
+                    } else {
+                        let html = '<tr><td colspan="10" style="text-align:center; padding: 20px;"><h3>Vui lòng chọn kỳ đã chốt để xem:</h3>';
+                        list.forEach(name => {
+                             html += `<button class="mark-btn" style="margin: 10px; background: #17a2b8; padding: 12px 25px; width: auto;" onclick="loadClosedData('${name}')">📁 ${name}</button>`;
+                        });
+                        html += '</td></tr>';
+                        document.getElementById('tableBody').innerHTML = html;
+                    }
+                }
+            });
+        }
+
+        function loadClosedData(sheetName) {
+            currentViewMode = 'closed_data';
+            document.getElementById('tableDiv').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('tableTitle').innerText = "Đang tải " + sheetName + "...";
+
+            fetch(API_URL + "?type=closed_data&sheetName=" + sheetName)
+            .then(r => r.json())
+            .then(res => {
+                if(res.success) {
+                    globalData = res.data;
+                    currentSheetName = res.sheetName;
+                    document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName;
+                    renderTable();
+                }
+            });
+        }
+
         function updateTableTitle() {
+            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') return; // Bỏ qua nếu đang xem ds chốt
+            
             const titles = {
-                'ds': 'Danh Sách Mặt Bằng', // Xóa chữ (Mẫu)
+                'ds': 'Danh Sách Mặt Bằng',
                 'all': 'Danh Sách Thu',
                 'paid': 'Danh Sách Đã Đóng',
                 'unpaid': 'Danh Sách Chưa Đóng',
                 'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
             };
-            // Ẩn chữ (DS) phía sau tiêu đề bảng khi đang ở chế độ ds
             let suffix = (currentSheetName && currentViewMode !== 'ds') ? ` (${currentSheetName})` : "";
             document.getElementById('tableTitle').innerText = titles[currentViewMode] + suffix;
         }
@@ -207,10 +294,9 @@
             let totalDebt = 0;
             let amountColumnIndex = -1;
 
-            // Bóc tách Tháng, Năm từ sheet hiện tại (VD: T7-26 -> Tháng 7, Năm 2026)
             let extractedMonth = "Hiện tại";
             let extractedYear = "";
-            if(currentSheetName.includes('T') && currentSheetName !== 'DS') {
+            if(currentSheetName.includes('T') && currentSheetName !== 'DS' && currentViewMode !== 'closed_data') {
                 let p = currentSheetName.split(' ')[0].replace('T', '').split('-');
                 if(p.length > 1) {
                     extractedMonth = p[0];
@@ -219,7 +305,8 @@
             }
 
             filteredData.forEach(row => {
-                if (currentViewMode === 'ds' || row._sheetName.includes('T')) {
+                // Nếu là DS gốc, hoặc danh sách đã chốt, hoặc dữ liệu tháng này -> gộp chung vào currentDataList
+                if (currentViewMode === 'ds' || currentViewMode === 'closed_data' || row._sheetName.includes('T')) {
                     currentDataList.push(row);
                 } else if (row._sheetName === 'Nợ') {
                     let m = row['Tháng'] || '?';
@@ -233,7 +320,6 @@
             let tbodyHtml = '';
             let totalColumns = headers.length + (isActionView ? 1 : 0);
 
-            // Vẽ từng khối danh sách
             function renderRowGroup(rows, titleText, isDebt, debtMonth, debtYear) {
                 let groupTotal = 0;
                 let titleClass = isDebt ? 'title-debt' : 'title-current';
@@ -284,8 +370,7 @@
                     tbodyHtml += `</tr>`;
                 });
 
-                if (currentViewMode !== 'ds' && titleText !== "") {
-                    // Áp dụng định dạng Tháng/Năm cho các dòng Subtotal
+                if (currentViewMode !== 'ds' && currentViewMode !== 'closed_data' && titleText !== "") {
                     let subTotalText = isDebt ? `Tổng nợ tháng ${debtMonth} năm ${debtYear}` : `Tổng tháng ${extractedMonth} năm ${extractedYear}`;
                     tbodyHtml += `
                     <tr class="subtotal-row ${subtotalClass}">
@@ -296,13 +381,16 @@
                 }
             }
 
-            // 1. Tháng hiện tại
+            // 1. Vẽ Khối Danh sách chính (Tháng hiện tại, DS, hoặc Sổ đã chốt)
             if (currentDataList.length > 0) {
-                let currentTitle = (currentViewMode === 'ds') ? "" : `Tháng ${extractedMonth} năm ${extractedYear}`;
+                let currentTitle = "";
+                if (currentViewMode === 'all' || currentViewMode === 'paid' || currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
+                    currentTitle = `Tháng ${extractedMonth} năm ${extractedYear}`;
+                }
                 renderRowGroup(currentDataList, currentTitle, false, null, null);
             }
 
-            // 2. Dữ liệu Nợ cũ
+            // 2. Vẽ dữ liệu Nợ cũ
             let debtKeys = Object.keys(debtGroups);
             if (debtKeys.length > 0) {
                 tbodyHtml += `<tr class="section-divider title-debt"><td colspan="${totalColumns}">Nợ</td></tr>`;
@@ -316,7 +404,6 @@
 
                 debtKeys.forEach(key => {
                     let group = debtGroups[key];
-                    // Truyền đầy đủ định dạng Tháng/Năm cho Tiêu đề
                     renderRowGroup(group.rows, `Nợ tháng ${group.month} năm ${group.year}`, true, group.month, group.year);
                 });
 
@@ -330,31 +417,21 @@
 
             document.getElementById('tableBody').innerHTML = tbodyHtml;
 
-            // PHỤC HỒI TỔNG CỘNG CHO DANH SÁCH MẶT BẰNG & BẢNG THU
+            // Xây dựng Footer
             if(amountColumnIndex !== -1) {
                 let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                 let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
                 
-                if (currentViewMode === 'ds') {
-                    // Dành riêng cho Danh sách mặt bằng
-                    document.getElementById('tableFoot').innerHTML = `
-                        <tr class="total-row">
-                            <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG:</td>
-                            <td>${totalCurrent.toLocaleString('vi-VN')}</td>
-                            ${emptyCells}
-                        </tr>
-                    `;
-                } else {
-                    // Dành cho Danh sách Thu (Tháng này + Nợ)
-                    let grandTotal = totalCurrent + totalDebt;
-                    document.getElementById('tableFoot').innerHTML = `
-                        <tr class="total-row">
-                            <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG THU:</td>
-                            <td>${grandTotal.toLocaleString('vi-VN')}</td>
-                            ${emptyCells}
-                        </tr>
-                    `;
-                }
+                let grandTotal = totalCurrent + totalDebt;
+                let footerLabel = (currentViewMode === 'ds' || currentViewMode === 'closed_data') ? 'TỔNG CỘNG:' : 'TỔNG CỘNG THU:';
+                
+                document.getElementById('tableFoot').innerHTML = `
+                    <tr class="total-row">
+                        <td colspan="${amountColumnIndex}" style="text-align: right;">${footerLabel}</td>
+                        <td>${grandTotal.toLocaleString('vi-VN')}</td>
+                        ${emptyCells}
+                    </tr>
+                `;
             } else {
                  document.getElementById('tableFoot').innerHTML = ''; 
             }
