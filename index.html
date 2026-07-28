@@ -21,7 +21,7 @@
         .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; }
-        th { background-color: #343a40; color: white; position: sticky; top: 0; }
+        th { background-color: #343a40; color: white; position: sticky; top: 0; z-index: 10; }
         tr:nth-child(even) { background-color: #f2f2f2; }
         tr:hover { background-color: #e9ecef; }
         
@@ -45,12 +45,17 @@
         .undo-btn:hover { background-color: #c82333; }
         .col-action { width: 90px; text-align: center; }
         
-        /* Chỉnh CSS cho Vách ngăn và Footer Kế toán */
+        /* CSS DÀNH CHO CÔNG NỢ NHƯ HÌNH ẢNH YÊU CẦU */
         .row-debt td { background-color: #fff3cd !important; } 
-        .section-divider td { background-color: #e2e3e5 !important; color: #383d41; font-weight: bold; font-size: 15px; text-align: center; padding: 12px; letter-spacing: 1px; }
-        tfoot { background-color: #f8f9fa; }
-        .subtotal-row td { color: #555; border-bottom: 1px dashed #ccc;}
-        .total-row td { color: #d32f2f; font-size: 18px; font-weight: bold; background-color: #e9ecef;}
+        .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
+        .title-current { color: #333; }
+        .title-debt { color: #d32f2f; }
+        .subtotal-row td { font-weight: bold; border-top: 2px solid #555; background-color: #ffffff !important; border-bottom: none !important; border-left: none !important; border-right: none !important; }
+        .subtotal-debt td { color: #d32f2f; }
+        .subtotal-current td { color: #333; }
+        
+        tfoot { background-color: #e9ecef; }
+        .total-row td { color: #007bff; font-size: 18px; font-weight: bold; background-color: #e9ecef; text-align: right; }
 
         #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; font-size: 18px; display: none;}
     </style>
@@ -92,8 +97,7 @@
     </div>
 
     <script>
-        // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbybIJG6O7ESHssYwVx6kpQv2QL-5YG4FOKGAKSV1CZ7xiGpfmozDqfpF9uoBwx_jXHn/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyYQ226LpL5wq_Sj591aBBEdTJxRjJFomx1nsEuhuJFoWYOYocTSiTLsxnscD_ViYbM/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -149,7 +153,7 @@
                     }
                 })
                 .catch(error => {
-                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!';
+                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu! Vui lòng thử lại.';
                 });
             }
         }
@@ -194,104 +198,149 @@
             if(isActionView) theadHtml += `<th class="col-action">Thao tác</th>`;
             document.getElementById('tableHead').innerHTML = theadHtml;
 
-            let tbodyHtml = '';
-            // Khai báo biến tính tổng tách biệt
+            // XỬ LÝ NHÓM DỮ LIỆU THÁNG HIỆN TẠI VÀ NỢ
+            let currentDataList = [];
+            let debtGroups = {}; 
             let totalCurrent = 0;
             let totalDebt = 0;
             let amountColumnIndex = -1;
-            
-            let currentSection = ""; // Biến để theo dõi vách ngăn
+
+            let extractedMonth = "Hiện tại";
+            if(currentSheetName.includes('T')) {
+                let p = currentSheetName.split(' ')[0].replace('T', '').split('-');
+                if(p.length > 0) extractedMonth = p[0];
+            }
 
             filteredData.forEach(row => {
-                // Thêm vách ngăn (Divider) nếu chuyển từ danh sách Tháng sang Nợ
-                if (currentViewMode !== 'ds' && currentSection !== row._sheetName) {
-                    currentSection = row._sheetName;
-                    let colspanTotal = headers.length + (isActionView ? 1 : 0);
-                    let sectionTitle = (currentSection === 'Nợ') 
-                        ? '⚠️ DANH SÁCH CÔNG NỢ TỪ CÁC THÁNG TRƯỚC' 
-                        : `📅 DANH SÁCH PHÁT SINH KỲ NÀY`;
-                    tbodyHtml += `<tr class="section-divider"><td colspan="${colspanTotal}">${sectionTitle}</td></tr>`;
+                if (currentViewMode === 'ds' || row._sheetName.includes('T')) {
+                    currentDataList.push(row);
+                } else if (row._sheetName === 'Nợ') {
+                    let m = row['Tháng'] || '?';
+                    let y = row['Năm'] || '?';
+                    let key = `T${m}-${y}`;
+                    if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                    debtGroups[key].rows.push(row);
+                }
+            });
+
+            let tbodyHtml = '';
+            let totalColumns = headers.length + (isActionView ? 1 : 0);
+
+            // HÀM VẼ TỪNG NHÓM
+            function renderRowGroup(rows, titleText, isDebt) {
+                let groupTotal = 0;
+                let titleClass = isDebt ? 'title-debt' : 'title-current';
+                let rowClass = isDebt ? 'row-debt' : '';
+                let subtotalClass = isDebt ? 'subtotal-debt' : 'subtotal-current';
+                
+                // Tiêu đề nhóm (Tháng 7, Nợ T11...)
+                if (titleText !== "") {
+                    tbodyHtml += `<tr class="section-divider ${titleClass}"><td colspan="${totalColumns}">${titleText}</td></tr>`;
                 }
 
-                let rowClass = (row._sheetName === 'Nợ') ? 'row-debt' : '';
-                tbodyHtml += `<tr class="${rowClass}">`;
-                
-                headers.forEach((header, index) => {
-                    let val = row[header] !== undefined ? row[header] : '';
-                    let strVal = String(val).trim().toLowerCase();
-                    
-                    if (header.toLowerCase().includes('ghi chú')) {
-                        tbodyHtml += `<td>
-                            <div class="note-container">
-                                <span class="note-text" id="note-${row._sheetName}-${row._rowIndex}">${val}</span>
-                                <span class="edit-icon" title="Sửa ghi chú" onclick="editNote('${row._sheetName}', ${row._rowIndex})">✏️</span>
-                            </div>
-                        </td>`;
-                    } 
-                    else if (header.toLowerCase().includes('trạng thái')) {
-                        let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
-                        tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
-                    } else {
-                        tbodyHtml += `<td>${val}</td>`;
-                    }
+                rows.forEach(row => {
+                    tbodyHtml += `<tr class="${rowClass}">`;
+                    headers.forEach((header, index) => {
+                        let val = row[header] !== undefined ? row[header] : '';
+                        let strVal = String(val).trim().toLowerCase();
+                        
+                        if (header.toLowerCase().includes('ghi chú')) {
+                            tbodyHtml += `<td>
+                                <div class="note-container">
+                                    <span class="note-text" id="note-${row._sheetName}-${row._rowIndex}">${val}</span>
+                                    <span class="edit-icon" title="Sửa ghi chú" onclick="editNote('${row._sheetName}', ${row._rowIndex})">✏️</span>
+                                </div>
+                            </td>`;
+                        } 
+                        else if (header.toLowerCase().includes('trạng thái')) {
+                            let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
+                            tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
+                        } else {
+                            tbodyHtml += `<td>${val}</td>`;
+                        }
 
-                    // Tách biệt tính tổng cho Tháng này và Công nợ
-                    if (header.toLowerCase() === 'thành tiền') {
-                        amountColumnIndex = index;
-                        let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
-                        if(!isNaN(num)) {
-                            if (row._sheetName === 'Nợ') {
-                                totalDebt += num;
-                            } else {
-                                totalCurrent += num;
+                        if (header.toLowerCase() === 'thành tiền') {
+                            amountColumnIndex = index;
+                            let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
+                            if(!isNaN(num)) {
+                                groupTotal += num;
+                                if(isDebt) totalDebt += num;
+                                else totalCurrent += num;
                             }
                         }
+                    });
+                    
+                    if(currentViewMode === 'mark_paid') {
+                        tbodyHtml += `<td class="col-action"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'đã đóng')">Thu tiền</button></td>`;
+                    } else if (currentViewMode === 'paid') {
+                        tbodyHtml += `<td class="col-action"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                     }
+                    tbodyHtml += `</tr>`;
                 });
-                
-                if(currentViewMode === 'mark_paid') {
-                    tbodyHtml += `<td class="col-action"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'đã đóng')">Thu tiền</button></td>`;
-                } else if (currentViewMode === 'paid') {
-                    tbodyHtml += `<td class="col-action"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
+
+                // Dòng tổng của nhóm (Tổng T7, Tổng nợ T11...)
+                if (currentViewMode !== 'ds' && titleText !== "") {
+                    let subTotalText = isDebt ? `Tổng nợ T${rows[0]['Tháng']}` : `Tổng T${extractedMonth}`;
+                    tbodyHtml += `
+                    <tr class="subtotal-row ${subtotalClass}">
+                        <td colspan="${amountColumnIndex}" style="text-align: right;">${subTotalText}</td>
+                        <td>${groupTotal.toLocaleString('vi-VN')}</td>
+                        <td colspan="${headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0)}"></td>
+                    </tr>`;
                 }
+            }
+
+            // 1. Vẽ dữ liệu Tháng hiện tại
+            if (currentDataList.length > 0) {
+                let currentTitle = (currentViewMode === 'ds') ? "" : `Tháng ${extractedMonth}`;
+                renderRowGroup(currentDataList, currentTitle, false);
+            }
+
+            // 2. Vẽ dữ liệu Nợ (Nhóm và Sắp xếp theo Tháng/Năm)
+            let debtKeys = Object.keys(debtGroups);
+            if (debtKeys.length > 0) {
+                // Tiêu đề "Nợ" to màu đỏ
+                tbodyHtml += `<tr class="section-divider title-debt"><td colspan="${totalColumns}">Nợ</td></tr>`;
                 
-                tbodyHtml += `</tr>`;
-            });
+                // Sắp xếp các tháng nợ tăng dần
+                debtKeys.sort((a, b) => {
+                    let ya = parseInt(debtGroups[a].year) || 0;
+                    let yb = parseInt(debtGroups[b].year) || 0;
+                    if (ya !== yb) return ya - yb;
+                    return (parseInt(debtGroups[a].month) || 0) - (parseInt(debtGroups[b].month) || 0);
+                });
+
+                debtKeys.forEach(key => {
+                    let group = debtGroups[key];
+                    renderRowGroup(group.rows, `Nợ T${group.month}`, true);
+                });
+
+                // Tổng Nợ
+                tbodyHtml += `
+                <tr class="subtotal-row title-debt" style="font-size: 16px;">
+                    <td colspan="${amountColumnIndex}" style="text-align: right;">Tổng Nợ:</td>
+                    <td>${totalDebt.toLocaleString('vi-VN')}</td>
+                    <td colspan="${headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0)}"></td>
+                </tr>`;
+            }
+
             document.getElementById('tableBody').innerHTML = tbodyHtml;
 
-            // Xây dựng Footer Kế toán (Tính tổng 3 cấp)
-            if(amountColumnIndex !== -1) {
+            // Xây dựng Grand Total (Tổng cộng cuối cùng)
+            if(amountColumnIndex !== -1 && currentViewMode !== 'ds') {
                 let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                 let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
+                let grandTotal = totalCurrent + totalDebt;
                 
-                let tfootHtml = ``;
-                
-                // Chỉ hiển thị báo cáo chi tiết nếu không phải là đang xem mẫu DS
-                if (currentViewMode !== 'ds') {
-                    tfootHtml += `
-                        <tr class="subtotal-row">
-                            <td colspan="${amountColumnIndex}" style="text-align: right; font-weight: bold;">TỔNG PHÁT SINH KỲ NÀY:</td>
-                            <td style="color: #007bff; font-weight: bold;">${totalCurrent.toLocaleString('vi-VN')}</td>
-                            ${emptyCells}
-                        </tr>
-                        <tr class="subtotal-row">
-                            <td colspan="${amountColumnIndex}" style="text-align: right; font-weight: bold;">TỔNG CÔNG NỢ CŨ:</td>
-                            <td style="color: #ff9800; font-weight: bold;">${totalDebt.toLocaleString('vi-VN')}</td>
-                            ${emptyCells}
-                        </tr>
-                    `;
-                }
-                
-                // Dòng TỔNG CỘNG cuối cùng
-                let grandTotal = (currentViewMode === 'ds') ? totalCurrent : (totalCurrent + totalDebt);
-                tfootHtml += `
+                document.getElementById('tableFoot').innerHTML = `
                     <tr class="total-row">
-                        <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG ĐANG HIỂN THỊ:</td>
+                        <td colspan="${amountColumnIndex}">TỔNG CỘNG THU:</td>
                         <td>${grandTotal.toLocaleString('vi-VN')}</td>
                         ${emptyCells}
                     </tr>
                 `;
-                document.getElementById('tableFoot').innerHTML = tfootHtml;
+            } else {
+                 document.getElementById('tableFoot').innerHTML = ''; // Ẩn tfoot nếu là DS
             }
         }
 
@@ -299,12 +348,12 @@
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
             
-            let newNote = prompt(`Nhập ghi chú mới cho hộ này (Thuộc danh sách ${rowSheetName}):`, currentNote);
+            let newNote = prompt(`Nhập ghi chú mới cho hộ này:`, currentNote);
             if (newNote === null || newNote === currentNote) return; 
 
             let noteElement = document.getElementById(`note-${rowSheetName}-${rowIndex}`);
             let oldText = noteElement.innerText;
-            noteElement.innerText = "⏳ Đang lưu..."; 
+            noteElement.innerText = "⏳..."; 
 
             fetch(API_URL, {
                 method: 'POST',
