@@ -45,7 +45,7 @@
         .undo-btn:hover { background-color: #c82333; }
         .col-action { width: 90px; text-align: center; }
         
-        /* CSS DÀNH CHO CÔNG NỢ NHƯ HÌNH ẢNH YÊU CẦU */
+        /* CSS Giao diện Công nợ */
         .row-debt td { background-color: #fff3cd !important; } 
         .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
         .title-current { color: #333; }
@@ -65,7 +65,8 @@
     <div id="screenMenu">
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
         <div class="menu-container">
-            <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng (Mẫu)</button>
+            <!-- Đã đổi tên nút tinh gọn hơn -->
+            <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng</button>
             <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách thu</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Danh sách đã đóng</button>
             <button class="menu-btn btn-unpaid" onclick="loadData('unpaid')">⚠️ Danh sách chưa đóng</button>
@@ -97,6 +98,7 @@
     </div>
 
     <script>
+        // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
         const API_URL = 'https://script.google.com/macros/s/AKfycbyYQ226LpL5wq_Sj591aBBEdTJxRjJFomx1nsEuhuJFoWYOYocTSiTLsxnscD_ViYbM/exec';
         
         let globalData = []; 
@@ -111,13 +113,14 @@
 
         function updateTableTitle() {
             const titles = {
-                'ds': 'Danh Sách Mặt Bằng (Mẫu)',
+                'ds': 'Danh Sách Mặt Bằng', // Xóa chữ (Mẫu)
                 'all': 'Danh Sách Thu',
                 'paid': 'Danh Sách Đã Đóng',
                 'unpaid': 'Danh Sách Chưa Đóng',
                 'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
             };
-            let suffix = currentSheetName ? ` (${currentSheetName})` : "";
+            // Ẩn chữ (DS) phía sau tiêu đề bảng khi đang ở chế độ ds
+            let suffix = (currentSheetName && currentViewMode !== 'ds') ? ` (${currentSheetName})` : "";
             document.getElementById('tableTitle').innerText = titles[currentViewMode] + suffix;
         }
 
@@ -198,17 +201,21 @@
             if(isActionView) theadHtml += `<th class="col-action">Thao tác</th>`;
             document.getElementById('tableHead').innerHTML = theadHtml;
 
-            // XỬ LÝ NHÓM DỮ LIỆU THÁNG HIỆN TẠI VÀ NỢ
             let currentDataList = [];
             let debtGroups = {}; 
             let totalCurrent = 0;
             let totalDebt = 0;
             let amountColumnIndex = -1;
 
+            // Bóc tách Tháng, Năm từ sheet hiện tại (VD: T7-26 -> Tháng 7, Năm 2026)
             let extractedMonth = "Hiện tại";
-            if(currentSheetName.includes('T')) {
+            let extractedYear = "";
+            if(currentSheetName.includes('T') && currentSheetName !== 'DS') {
                 let p = currentSheetName.split(' ')[0].replace('T', '').split('-');
-                if(p.length > 0) extractedMonth = p[0];
+                if(p.length > 1) {
+                    extractedMonth = p[0];
+                    extractedYear = "20" + p[1];
+                }
             }
 
             filteredData.forEach(row => {
@@ -226,14 +233,13 @@
             let tbodyHtml = '';
             let totalColumns = headers.length + (isActionView ? 1 : 0);
 
-            // HÀM VẼ TỪNG NHÓM
-            function renderRowGroup(rows, titleText, isDebt) {
+            // Vẽ từng khối danh sách
+            function renderRowGroup(rows, titleText, isDebt, debtMonth, debtYear) {
                 let groupTotal = 0;
                 let titleClass = isDebt ? 'title-debt' : 'title-current';
                 let rowClass = isDebt ? 'row-debt' : '';
                 let subtotalClass = isDebt ? 'subtotal-debt' : 'subtotal-current';
                 
-                // Tiêu đề nhóm (Tháng 7, Nợ T11...)
                 if (titleText !== "") {
                     tbodyHtml += `<tr class="section-divider ${titleClass}"><td colspan="${totalColumns}">${titleText}</td></tr>`;
                 }
@@ -278,9 +284,9 @@
                     tbodyHtml += `</tr>`;
                 });
 
-                // Dòng tổng của nhóm (Tổng T7, Tổng nợ T11...)
                 if (currentViewMode !== 'ds' && titleText !== "") {
-                    let subTotalText = isDebt ? `Tổng nợ T${rows[0]['Tháng']}` : `Tổng T${extractedMonth}`;
+                    // Áp dụng định dạng Tháng/Năm cho các dòng Subtotal
+                    let subTotalText = isDebt ? `Tổng nợ tháng ${debtMonth} năm ${debtYear}` : `Tổng tháng ${extractedMonth} năm ${extractedYear}`;
                     tbodyHtml += `
                     <tr class="subtotal-row ${subtotalClass}">
                         <td colspan="${amountColumnIndex}" style="text-align: right;">${subTotalText}</td>
@@ -290,19 +296,17 @@
                 }
             }
 
-            // 1. Vẽ dữ liệu Tháng hiện tại
+            // 1. Tháng hiện tại
             if (currentDataList.length > 0) {
-                let currentTitle = (currentViewMode === 'ds') ? "" : `Tháng ${extractedMonth}`;
-                renderRowGroup(currentDataList, currentTitle, false);
+                let currentTitle = (currentViewMode === 'ds') ? "" : `Tháng ${extractedMonth} năm ${extractedYear}`;
+                renderRowGroup(currentDataList, currentTitle, false, null, null);
             }
 
-            // 2. Vẽ dữ liệu Nợ (Nhóm và Sắp xếp theo Tháng/Năm)
+            // 2. Dữ liệu Nợ cũ
             let debtKeys = Object.keys(debtGroups);
             if (debtKeys.length > 0) {
-                // Tiêu đề "Nợ" to màu đỏ
                 tbodyHtml += `<tr class="section-divider title-debt"><td colspan="${totalColumns}">Nợ</td></tr>`;
                 
-                // Sắp xếp các tháng nợ tăng dần
                 debtKeys.sort((a, b) => {
                     let ya = parseInt(debtGroups[a].year) || 0;
                     let yb = parseInt(debtGroups[b].year) || 0;
@@ -312,10 +316,10 @@
 
                 debtKeys.forEach(key => {
                     let group = debtGroups[key];
-                    renderRowGroup(group.rows, `Nợ T${group.month}`, true);
+                    // Truyền đầy đủ định dạng Tháng/Năm cho Tiêu đề
+                    renderRowGroup(group.rows, `Nợ tháng ${group.month} năm ${group.year}`, true, group.month, group.year);
                 });
 
-                // Tổng Nợ
                 tbodyHtml += `
                 <tr class="subtotal-row title-debt" style="font-size: 16px;">
                     <td colspan="${amountColumnIndex}" style="text-align: right;">Tổng Nợ:</td>
@@ -326,21 +330,33 @@
 
             document.getElementById('tableBody').innerHTML = tbodyHtml;
 
-            // Xây dựng Grand Total (Tổng cộng cuối cùng)
-            if(amountColumnIndex !== -1 && currentViewMode !== 'ds') {
+            // PHỤC HỒI TỔNG CỘNG CHO DANH SÁCH MẶT BẰNG & BẢNG THU
+            if(amountColumnIndex !== -1) {
                 let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                 let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
-                let grandTotal = totalCurrent + totalDebt;
                 
-                document.getElementById('tableFoot').innerHTML = `
-                    <tr class="total-row">
-                        <td colspan="${amountColumnIndex}">TỔNG CỘNG THU:</td>
-                        <td>${grandTotal.toLocaleString('vi-VN')}</td>
-                        ${emptyCells}
-                    </tr>
-                `;
+                if (currentViewMode === 'ds') {
+                    // Dành riêng cho Danh sách mặt bằng
+                    document.getElementById('tableFoot').innerHTML = `
+                        <tr class="total-row">
+                            <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG:</td>
+                            <td>${totalCurrent.toLocaleString('vi-VN')}</td>
+                            ${emptyCells}
+                        </tr>
+                    `;
+                } else {
+                    // Dành cho Danh sách Thu (Tháng này + Nợ)
+                    let grandTotal = totalCurrent + totalDebt;
+                    document.getElementById('tableFoot').innerHTML = `
+                        <tr class="total-row">
+                            <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG THU:</td>
+                            <td>${grandTotal.toLocaleString('vi-VN')}</td>
+                            ${emptyCells}
+                        </tr>
+                    `;
+                }
             } else {
-                 document.getElementById('tableFoot').innerHTML = ''; // Ẩn tfoot nếu là DS
+                 document.getElementById('tableFoot').innerHTML = ''; 
             }
         }
 
