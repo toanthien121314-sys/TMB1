@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Quản Lý Thu Phí</title>
+    <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
         h2 { text-align: center; color: #333; margin-bottom: 30px; }
@@ -51,8 +51,8 @@
 <body>
 
     <div id="screenMenu">
-        <!-- ĐÃ CẬP NHẬT ID ĐỂ HIỂN THỊ THÁNG ĐỘNG -->
-        <h2 id="mainAppTitle">App Quản Lý Thu Phí</h2> 
+        <!-- ĐÃ ĐỔI TÊN APP CỐ ĐỊNH NHƯ YÊU CẦU -->
+        <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
         <div class="menu-container">
             <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách tổng</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Danh sách đã đóng</button>
@@ -69,6 +69,7 @@
             </div>
         </div>
         
+        <!-- TIÊU ĐỀ BẢNG SẼ ĐƯỢC CHÈN THÊM THÁNG/NĂM BẰNG JAVASCRIPT -->
         <h2 id="tableTitle">Danh Sách</h2>
         
         <div id="loading">Đang tải dữ liệu, vui lòng đợi...</div>
@@ -91,11 +92,24 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbzCN8oKh1xRhau7WSttjhsZVGflP1rwc5VjMHE-l_HXfVORxPl1KhN-wsTVyJB9sJCy/exec';
         
         let globalData = []; 
+        let currentSheetName = ""; // Biến lưu trữ tên sheet (Tháng/Năm)
         let currentViewMode = 'all'; 
 
         function showMenu() {
             document.getElementById('screenMenu').style.display = 'block';
             document.getElementById('screenTable').style.display = 'none';
+        }
+
+        // Hàm cập nhật tiêu đề danh sách có chèn thêm Tháng/Năm
+        function updateTableTitle() {
+            const titles = {
+                'all': 'Danh Sách Tổng',
+                'paid': 'Danh Sách Đã Đóng',
+                'unpaid': 'Danh Sách Chưa Đóng',
+                'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
+            };
+            let suffix = currentSheetName ? ` (${currentSheetName})` : "";
+            document.getElementById('tableTitle').innerText = titles[currentViewMode] + suffix;
         }
 
         function loadData(viewMode) {
@@ -107,25 +121,18 @@
             
             document.getElementById('searchInput').value = '';
 
-            const titles = {
-                'all': 'Danh Sách Tổng',
-                'paid': 'Danh Sách Đã Đóng',
-                'unpaid': 'Danh Sách Chưa Đóng',
-                'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền'
-            };
-            document.getElementById('tableTitle').innerText = titles[viewMode];
-
             if(globalData.length > 0) {
+                updateTableTitle();
                 renderTable();
             } else {
+                document.getElementById('tableTitle').innerText = "Đang tải dữ liệu...";
                 fetch(API_URL)
                 .then(response => response.json())
                 .then(res => {
-                    // --- ĐÃ CẬP NHẬT LOGIC ĐỂ NHẬN JSON MỚI TỪ APP SCRIPT ---
                     if(res.success) {
                         globalData = res.data;
-                        // Gắn tên sheet đang thao tác lên tiêu đề chính
-                        document.getElementById('mainAppTitle').innerText = "App Quản Lý Thu Phí (" + res.sheetName + ")";
+                        currentSheetName = res.sheetName; // Lấy tên sheet (VD: T7-26) từ Google Script
+                        updateTableTitle(); // Cập nhật lại tiêu đề có chứa tháng năm
                         renderTable();
                     } else {
                         document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
