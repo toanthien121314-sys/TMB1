@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
+    <!-- Tích hợp thư viện Thông báo chuyên nghiệp SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
         h2 { text-align: center; color: #333; margin-bottom: 30px; }
@@ -41,11 +43,14 @@
         .search-box { flex-grow: 1; max-width: 400px; }
         .search-box input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         
-        .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
         .mark-btn:hover { background-color: #218838; }
-        .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
         .undo-btn:hover { background-color: #c82333; }
         .col-action { width: 90px; text-align: center; }
+        
+        /* Hiệu ứng màu nền khi vừa thu tiền xong */
+        .row-success td { background-color: #e8f5e9 !important; transition: background-color 0.5s ease; }
         
         .row-debt td { background-color: #fff3cd !important; } 
         .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
@@ -112,36 +117,67 @@
             document.getElementById('screenTable').style.display = 'none';
         }
 
+        // --- GIAO DIỆN CHỐT SỔ MỚI ---
         function executeChotSo() {
-            if(!confirm("⚠️ XÁC NHẬN CHỐT SỔ KỲ NÀY?\n\nHệ thống sẽ tự động:\n1. Gom hộ Đã Đóng vào File lưu trữ tại thư mục 'Chốt sổ'.\n2. Gom hộ Chưa Đóng chuyển toàn bộ sang Sổ Nợ.\n3. Khởi tạo danh sách thu cho kỳ tiếp theo.")) return;
+            Swal.fire({
+                title: '⚠️ XÁC NHẬN CHỐT SỔ',
+                html: "<div style='text-align:left; font-size:15px; margin-top:10px;'>" +
+                      "Hệ thống sẽ tự động thực hiện:<br><br>" +
+                      "<b>1.</b> Gom hộ Đã Đóng vào File lưu trữ tại thư mục 'Chốt sổ'.<br>" +
+                      "<b>2.</b> Gom hộ Chưa Đóng chuyển toàn bộ sang Sổ Nợ.<br>" +
+                      "<b>3.</b> Khởi tạo danh sách thu cho kỳ tiếp theo.</div>",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#343a40',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Tiến hành Chốt Sổ',
+                cancelButtonText: 'Hủy bỏ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('screenMenu').style.display = 'none';
+                    document.getElementById('screenTable').style.display = 'block';
+                    document.getElementById('tableDiv').style.display = 'none';
+                    document.getElementById('loading').style.display = 'block';
+                    document.getElementById('tableTitle').innerText = "Đang xử lý...";
 
-            document.getElementById('screenMenu').style.display = 'none';
-            document.getElementById('screenTable').style.display = 'block';
-            document.getElementById('tableDiv').style.display = 'none';
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('tableTitle').innerText = "Đang tạo File Lưu trữ, vui lòng chờ...";
+                    Swal.fire({
+                        title: 'Đang tạo File Lưu trữ',
+                        text: 'Vui lòng không tắt trang web lúc này...',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
 
-            fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ updateType: 'chot_so' })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if(res.success) {
-                    alert("✅ " + res.message);
-                    globalData = []; 
-                    loadedDataType = "";
-                    loadData('all');
-                } else {
-                    alert("❌ Lỗi: " + res.message);
-                    showMenu();
+                    fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ updateType: 'chot_so' })
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if(res.success) {
+                            Swal.fire({
+                                title: 'Thành công!',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'Đã hiểu'
+                            }).then(() => {
+                                globalData = []; 
+                                loadedDataType = "";
+                                loadData('all');
+                            });
+                        } else {
+                            Swal.fire('Lỗi hệ thống!', res.message, 'error');
+                            showMenu();
+                        }
+                    })
+                    .catch(e => { 
+                        Swal.fire('Lỗi kết nối!', 'Vui lòng kiểm tra lại mạng internet.', 'error');
+                        showMenu(); 
+                    });
                 }
-            })
-            .catch(e => { alert("❌ Lỗi kết nối!"); showMenu(); });
+            });
         }
 
-        // ĐÃ CHỈNH SỬA: Xử lý dữ liệu trả về mảng object chứa {name, id} của file
         function loadClosedList() {
             currentViewMode = 'closed_list';
             document.getElementById('screenMenu').style.display = 'none';
@@ -158,7 +194,7 @@
             .then(res => {
                 document.getElementById('loading').style.display = 'none';
                 if(res.success) {
-                    let list = res.data; // List bây giờ chứa các object {name, id}
+                    let list = res.data;
                     if(list.length === 0) {
                         document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">Chưa có kỳ nào được chốt trong hệ thống.</td></tr>';
                     } else {
@@ -173,7 +209,6 @@
             });
         }
 
-        // ĐÃ CHỈNH SỬA: Gửi fileId lên Server thay vì tên Sheet
         function loadClosedData(fileId, fileName) {
             currentViewMode = 'closed_data';
             document.getElementById('tableDiv').style.display = 'none';
@@ -303,7 +338,6 @@
                 else if (currentViewMode === 'closed_data') {
                     let m = String(row['Tháng'] || '').trim();
                     let y = String(row['Năm'] || '').trim();
-                    
                     if (m === extractedMonth && y === extractedYear) {
                         currentDataList.push(row);
                     } else {
@@ -343,7 +377,6 @@
                     headers.forEach((header, index) => {
                         let val = row[header] !== undefined ? row[header] : '';
                         let strVal = String(val).trim().toLowerCase();
-                        
                         let isClosed = (currentViewMode === 'closed_data');
                         
                         if (header.toLowerCase().includes('ghi chú')) {
@@ -441,71 +474,139 @@
             }
         }
 
+        // --- GIAO DIỆN SỬA GHI CHÚ MỚI ---
         function editNote(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
             
-            let newNote = prompt(`Nhập ghi chú mới cho hộ này:`, currentNote);
-            if (newNote === null || newNote === currentNote) return; 
+            Swal.fire({
+                title: 'Chỉnh sửa Ghi chú',
+                input: 'text',
+                inputLabel: `Nhập nội dung ghi chú mới:`,
+                inputValue: currentNote,
+                showCancelButton: true,
+                confirmButtonText: 'Lưu thay đổi',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#007bff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let newNote = result.value;
+                    if (newNote === currentNote) return; 
 
-            let noteElement = document.getElementById(`note-${rowSheetName}-${rowIndex}`);
-            let oldText = noteElement.innerText;
-            noteElement.innerText = "⏳..."; 
+                    let noteElement = document.getElementById(`note-${rowSheetName}-${rowIndex}`);
+                    let oldText = noteElement.innerText;
+                    noteElement.innerText = "⏳..."; 
 
-            fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    sheetName: rowSheetName, 
-                    rowIndex: rowIndex,
-                    updateType: 'note',
-                    value: newNote
-                })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if(res.success) {
-                    rowData['Ghi chú'] = newNote; 
-                    renderTable(); 
-                } else {
-                    alert("❌ Lỗi: " + res.message);
-                    noteElement.innerText = oldText; 
+                    fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            sheetName: rowSheetName, 
+                            rowIndex: rowIndex,
+                            updateType: 'note',
+                            value: newNote
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if(res.success) {
+                            // Cập nhật DOM trực tiếp thay vì render lại cả bảng
+                            rowData['Ghi chú'] = newNote; 
+                            noteElement.innerText = newNote; 
+                            Swal.fire({
+                                toast: true, position: 'top-end', icon: 'success',
+                                title: 'Đã lưu ghi chú thành công!', showConfirmButton: false, timer: 2000
+                            });
+                        } else {
+                            Swal.fire('Lỗi!', res.message, 'error');
+                            noteElement.innerText = oldText; 
+                        }
+                    })
+                    .catch(err => { 
+                        Swal.fire('Lỗi kết nối!', 'Không thể kết nối đến máy chủ.', 'error');
+                        noteElement.innerText = oldText; 
+                    });
                 }
-            })
-            .catch(err => { alert("❌ Lỗi kết nối!"); noteElement.innerText = oldText; });
+            });
         }
 
+        // --- GIAO DIỆN THU TIỀN / HOÀN TÁC MỚI (KHÔNG LÀM MẤT DÒNG) ---
         function updateStatus(rowSheetName, rowIndex, btnElement, newStatus) {
-            let confirmMessage = newStatus === 'đã đóng' ? `Xác nhận hộ này ĐÃ ĐÓNG TIỀN?` : `Xác nhận HỦY THU TIỀN hộ này?`;
-            if(!confirm(confirmMessage)) return;
-            
-            let originalText = btnElement.innerText;
-            btnElement.innerText = "Đang xử lý...";
-            btnElement.disabled = true;
+            let isCollecting = (newStatus === 'đã đóng');
+            let titleText = isCollecting ? 'Xác nhận thu tiền?' : 'Xác nhận hoàn tác?';
+            let confirmText = isCollecting ? 'Thu tiền' : 'Đồng ý hoàn tác';
+            let confirmColor = isCollecting ? '#28a745' : '#dc3545';
 
-            fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    sheetName: rowSheetName,
-                    rowIndex: rowIndex,
-                    updateType: 'status', 
-                    value: newStatus
-                })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if(res.success) {
-                    let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
-                    if(rowData) rowData['Trạng thái'] = newStatus;
-                    renderTable();
-                } else {
-                    alert("❌ Lỗi: " + res.message);
-                    btnElement.innerText = originalText;
-                    btnElement.disabled = false;
+            Swal.fire({
+                title: titleText,
+                text: `Trạng thái sẽ được chuyển thành: ${newStatus.toUpperCase()}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: confirmColor,
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: confirmText,
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let originalText = btnElement.innerText;
+                    btnElement.innerText = "Đang xử lý...";
+                    btnElement.disabled = true;
+
+                    fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            sheetName: rowSheetName,
+                            rowIndex: rowIndex,
+                            updateType: 'status', 
+                            value: newStatus
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if(res.success) {
+                            let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
+                            if(rowData) rowData['Trạng thái'] = newStatus;
+                            
+                            // Cập nhật DOM trực tiếp (Không gọi renderTable để giữ nguyên dòng)
+                            let tr = btnElement.closest('tr');
+                            let badge = tr.querySelector('.status-badge');
+                            
+                            if (badge) {
+                                badge.innerText = newStatus;
+                                badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid';
+                            }
+                            
+                            if (isCollecting) {
+                                btnElement.innerText = "Hoàn tác";
+                                btnElement.className = "undo-btn";
+                                btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
+                                tr.classList.add('row-success'); // Đổi màu nền xanh nhạt báo hiệu đã thu
+                                
+                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã thu tiền!', showConfirmButton: false, timer: 2000 });
+                            } else {
+                                btnElement.innerText = "Thu tiền";
+                                btnElement.className = "mark-btn";
+                                btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'đã đóng')`);
+                                tr.classList.remove('row-success'); // Xóa màu nền xanh
+                                
+                                Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Đã hoàn tác!', showConfirmButton: false, timer: 2000 });
+                            }
+                            
+                            btnElement.disabled = false;
+                        } else {
+                            Swal.fire('Lỗi!', res.message, 'error');
+                            btnElement.innerText = originalText;
+                            btnElement.disabled = false;
+                        }
+                    })
+                    .catch(err => { 
+                        Swal.fire('Lỗi kết nối!', 'Vui lòng kiểm tra lại mạng.', 'error');
+                        btnElement.innerText = originalText;
+                        btnElement.disabled = false; 
+                    });
                 }
-            })
-            .catch(err => { alert("❌ Lỗi kết nối!"); btnElement.innerText = originalText; btnElement.disabled = false; });
+            });
         }
     </script>
 </body>
