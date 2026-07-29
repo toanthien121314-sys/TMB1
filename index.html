@@ -45,6 +45,9 @@
         .search-box { flex-grow: 1; max-width: 400px; }
         .search-box input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         
+        /* Hiệu ứng thanh chọn nhân viên thu tiền */
+        .nv-select { padding: 10px; border-radius: 5px; border: 1px solid #ced4da; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; }
+        
         .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-bottom: 3px;}
         .mark-btn:hover { background-color: #218838; }
         .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-bottom: 3px;}
@@ -87,6 +90,14 @@
     <div id="screenTable" style="display: none;">
         <div class="top-controls">
             <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
+            
+            <!-- THANH CHỌN NHÂN VIÊN THU TIỀN -->
+            <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
+                <option value="">-- Chọn nhân viên --</option>
+                <option value="T">Nhân viên A</option>
+                <option value="L">Nhân viên B</option>
+            </select>
+
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Tìm tên, lô, ngành hàng..." onkeyup="renderTable()">
             </div>
@@ -109,7 +120,7 @@
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycby924cOXYdyW85RL9fNiSUwLEM3CFm9jLQsg5ITpjqNR980WMG-1AvCv-_YXKe-TXvm/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxCa7W8on8l0Gsb0u0gwPalIokiUTxKbT4_4poqO7qOBg5jO6Hl35a9-aQg8zSL4qhr/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -247,6 +258,9 @@
             document.getElementById('loading').style.display = 'block';
             document.getElementById('searchInput').value = '';
             
+            let nvSelect = document.getElementById('nvSelect');
+            nvSelect.style.display = 'none';
+            
             if(globalData.length > 0 && loadedDataType === targetType) {
                 updateTableTitle();
                 renderTable();
@@ -297,6 +311,19 @@
             document.getElementById('loading').style.display = 'block';
             document.getElementById('searchInput').value = '';
 
+            // HIỂN THỊ MENU CHỌN NHÂN VIÊN Ở CHẾ ĐỘ ĐÓNG TIỀN VÀ XEM ĐÃ ĐÓNG
+            let nvSelect = document.getElementById('nvSelect');
+            if (viewMode === 'mark_paid' || viewMode === 'paid') {
+                nvSelect.style.display = 'inline-block';
+                if (viewMode === 'mark_paid') {
+                    nvSelect.options[0].text = "-- BẮT BUỘC CHỌN NHÂN VIÊN THU --";
+                } else {
+                    nvSelect.options[0].text = "-- Xem tổng tất cả NV --";
+                }
+            } else {
+                nvSelect.style.display = 'none';
+            }
+
             if(globalData.length > 0 && loadedDataType === targetType) {
                 updateTableTitle();
                 renderTable();
@@ -327,12 +354,26 @@
             
             let filteredData = globalData;
             let searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+            let selectedNV = document.getElementById('nvSelect').value;
 
-            if(currentViewMode === 'paid') {
-                filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'đã đóng');
-            } else if(currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
+            // ĐÃ SỬA LẠI LOGIC TÌM KIẾM ĐÃ ĐÓNG / CHƯA ĐÓNG
+            if (currentViewMode === 'paid') {
+                // Đã đóng = Khác rỗng và Khác "chưa đóng"
+                filteredData = globalData.filter(row => {
+                    let st = String(row['Trạng thái'] || '').trim().toLowerCase();
+                    return st !== 'chưa đóng' && st !== '';
+                });
+                
+                // Lọc theo nhân viên nếu có chọn ở màn hình Xem Đã Đóng
+                if (selectedNV !== "") {
+                    filteredData = filteredData.filter(row => {
+                        let st = String(row['Trạng thái'] || '').trim().toUpperCase();
+                        return st.startsWith(selectedNV.toUpperCase());
+                    });
+                }
+            } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
-            } else if(currentViewMode === 'rep_search') {
+            } else if (currentViewMode === 'rep_search') {
                 filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
             }
 
@@ -404,12 +445,10 @@
                     let blockColor = colorPalette[colorIdx % colorPalette.length];
                     colorIdx++;
 
-                    // --- BỘ NÃO KIỂM TRA CHÉO (DÒ SÓT/THIẾU) ---
                     let monthCounts = {};
                     let isWarning = false;
                     let warningReason = "";
 
-                    // Đếm số lượng mặt bằng theo từng tháng
                     rows.forEach(r => {
                         let isOldDebt = r._sheetName === 'Nợ';
                         let m = r['Tháng'];
@@ -423,7 +462,8 @@
                         monthCounts[periodKey].total++;
 
                         let st = String(r['Trạng thái'] || r['Trạng Thái'] || '').trim().toLowerCase();
-                        if (st === 'đã đóng') {
+                        // Trạng thái đã đóng bây giờ là KHÁC "chưa đóng"
+                        if (st !== 'chưa đóng' && st !== '') {
                             monthCounts[periodKey].paid++;
                         }
                         if (st === 'chưa đóng') {
@@ -431,7 +471,6 @@
                         }
                     });
 
-                    // Xác định tháng hiện tại (không phải Nợ) làm mốc so sánh
                     let currentPeriodKey = null;
                     for (let key in monthCounts) {
                         if (!key.startsWith('Nợ')) {
@@ -442,15 +481,12 @@
                     
                     let baselineCount = currentPeriodKey ? monthCounts[currentPeriodKey].total : 0;
 
-                    // Kiểm tra 2 điều kiện cảnh báo
                     for (let key in monthCounts) {
-                        // Điều kiện 1: Trong cùng 1 tháng có cả Đã đóng và Chưa đóng
                         if (monthCounts[key].paid > 0 && monthCounts[key].unpaid > 0) {
                             isWarning = true;
                             warningReason = `Tháng ${key} có mặt bằng chưa thu tiền`;
                             break;
                         }
-                        // Điều kiện 2: Số lượng mặt bằng của tháng Nợ khác với tháng hiện tại
                         if (baselineCount > 0 && key.startsWith('Nợ')) {
                             if (monthCounts[key].total !== baselineCount) {
                                 isWarning = true;
@@ -460,14 +496,12 @@
                         }
                     }
 
-                    // Xuất kết quả huy hiệu
                     let statusBadge = "";
                     if (isWarning) {
                         statusBadge = `<span style="background-color: #dc3545; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="${warningReason}">❌ Cảnh báo: Thu sót/thiếu</span>`;
                     } else {
                         statusBadge = `<span style="background-color: #28a745; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="Dữ liệu đồng nhất, số lượng mặt bằng khớp nhau">✅ Dữ liệu hợp lý</span>`;
                     }
-                    // ------------------------------------------
 
                     tbodyHtml += `<tr class="section-divider"><td colspan="${totalColumns}" style="background-color: #343a40 !important; color: #ffeb3b; text-align: left; padding-left: 20px;">👤 Hộ Kinh Doanh: ${repName.toUpperCase()} ${statusBadge}</td></tr>`;
 
@@ -488,8 +522,11 @@
                                 </td>`;
                             } 
                             else if (header.toLowerCase().includes('trạng thái')) {
-                                let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
-                                tbodyHtml += `<td style="background-color: ${blockColor} !important;"><span class="status-badge ${statusClass}">${val}</span></td>`;
+                                // HIỂN THỊ CHÍNH XÁC MÃ ĐÓNG TIỀN (Ví dụ A26)
+                                let isPaid = (strVal !== 'chưa đóng' && strVal !== '');
+                                let statusClass = isPaid ? 'status-paid' : 'status-unpaid';
+                                let displayVal = isPaid ? val : 'chưa đóng'; // Hiển thị nguyên gốc cái mã A26
+                                tbodyHtml += `<td style="background-color: ${blockColor} !important;"><span class="status-badge ${statusClass}">${displayVal}</span></td>`;
                             } else {
                                 if (header.toLowerCase() === 'tháng') {
                                      let isOldDebt = row._sheetName === 'Nợ';
@@ -608,8 +645,11 @@
                                     </td>`;
                                 } 
                                 else if (header.toLowerCase().includes('trạng thái')) {
-                                    let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
-                                    tbodyHtml += `<td class="normal-cell"><span class="status-badge ${statusClass}">${val}</span></td>`;
+                                    // HIỂN THỊ MÃ THU TIỀN VÀO TRẠNG THÁI
+                                    let isPaid = (strVal !== 'chưa đóng' && strVal !== '');
+                                    let statusClass = isPaid ? 'status-paid' : 'status-unpaid';
+                                    let displayVal = isPaid ? val : 'chưa đóng';
+                                    tbodyHtml += `<td class="normal-cell"><span class="status-badge ${statusClass}">${displayVal}</span></td>`;
                                 } else {
                                     tbodyHtml += `<td class="normal-cell">${val}</td>`;
                                 }
@@ -629,12 +669,23 @@
                             }
                         });
                         
+                        let rowStatus = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim().toLowerCase();
+                        let isPaid = (rowStatus !== 'chưa đóng' && rowStatus !== '');
+
                         if(currentViewMode === 'mark_paid') {
-                            tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'đã đóng')">Đóng tiền</button></td>`;
+                            tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'PAY')">Đóng tiền</button></td>`;
                         } else if (currentViewMode === 'paid') {
                             tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                         } else if (currentViewMode === 'all') {
-                            tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" style="background-color: #17a2b8; min-width: 90px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button></td>`;
+                            // Chế độ All hiển thị linh hoạt Hoàn tác / Đóng tiền tùy trạng thái
+                            let actionBtnClass = isPaid ? 'undo-btn' : 'mark-btn';
+                            let actionBtnText = isPaid ? 'Hoàn tác' : 'Đóng tiền';
+                            let actionTarget = isPaid ? 'chưa đóng' : 'PAY';
+
+                            tbodyHtml += `<td class="col-action normal-cell">
+                                <button class="mark-btn" style="background-color: #17a2b8; min-width: 90px; margin-bottom: 5px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button><br>
+                                <button class="${actionBtnClass}" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, '${actionTarget}')">${actionBtnText}</button>
+                            </td>`;
                         }
                         tbodyHtml += `</tr>`;
                     });
@@ -924,15 +975,28 @@
             });
         }
 
-        function updateStatus(rowSheetName, rowIndex, btnElement, newStatus) {
-            let isCollecting = (newStatus === 'đã đóng');
+        function updateStatus(rowSheetName, rowIndex, btnElement, actionTarget) {
+            let isCollecting = (actionTarget === 'PAY');
+            let finalStatus = actionTarget; // Mặc định là chữ "chưa đóng" khi Hoàn tác
+
+            // NẾU LÀ ĐÓNG TIỀN: GHÉP TÊN NHÂN VIÊN VÀ NGÀY
+            if (isCollecting) {
+                let selectedNV = document.getElementById('nvSelect').value;
+                if (!selectedNV) {
+                    Swal.fire('Lưu ý', 'Vui lòng chọn tên Nhân viên thu tiền ở menu phía trên trước khi thu tiền!', 'warning');
+                    return;
+                }
+                let day = new Date().getDate(); // Lấy ngày của hôm nay
+                finalStatus = selectedNV + day; // Tạo ra chuỗi A26, B29...
+            }
+
             let titleText = isCollecting ? 'Xác nhận thu tiền?' : 'Xác nhận hoàn tác?';
             let confirmText = isCollecting ? 'Đóng tiền' : 'Đồng ý hoàn tác';
             let confirmColor = isCollecting ? '#28a745' : '#dc3545';
 
             Swal.fire({
                 title: titleText, 
-                text: `Trạng thái chuyển thành: ${newStatus.toUpperCase()}`, 
+                text: `Trạng thái sẽ được chuyển thành: ${finalStatus.toUpperCase()}`, 
                 icon: 'question',
                 showCancelButton: true, 
                 confirmButtonColor: confirmColor, 
@@ -948,21 +1012,21 @@
                     fetch(API_URL, {
                         method: 'POST', 
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'status', value: newStatus })
+                        body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'status', value: finalStatus })
                     })
                     .then(r => r.json())
                     .then(res => {
                         if(res.success) {
                             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
                             if(rowData) {
-                                rowData['Trạng thái'] = newStatus;
+                                rowData['Trạng thái'] = finalStatus;
                             }
                             
                             let tr = btnElement.closest('tr');
                             let badge = tr.querySelector('.status-badge');
                             
                             if (badge) { 
-                                badge.innerText = newStatus; 
+                                badge.innerText = finalStatus; 
                                 badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid'; 
                             }
                             
@@ -978,7 +1042,7 @@
                             } else {
                                 btnElement.innerText = "Đóng tiền"; 
                                 btnElement.className = "mark-btn";
-                                btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'đã đóng')`);
+                                btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'PAY')`);
                                 tr.classList.remove('row-success'); 
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Đã hoàn tác!', showConfirmButton: false, timer: 2000 });
                             }
