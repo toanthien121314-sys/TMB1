@@ -109,7 +109,7 @@
 
     <script>
         // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwmAWMbXJp5SSyxWMbyI7f850qnHPvjEL9qV9h07zwhFkyCiIcMhd1y1po5V8F6DIpI/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycby924cOXYdyW85RL9fNiSUwLEM3CFm9jLQsg5ITpjqNR980WMG-1AvCv-_YXKe-TXvm/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -148,20 +148,42 @@
                     document.getElementById('loading').style.display = 'block';
                     document.getElementById('tableTitle').innerText = "Đang xử lý...";
 
-                    Swal.fire({ title: 'Đang tạo File Lưu trữ', text: 'Vui lòng không tắt trang web lúc này...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    Swal.fire({ 
+                        title: 'Đang tạo File Lưu trữ', 
+                        text: 'Vui lòng không tắt trang web lúc này...', 
+                        allowOutsideClick: false, 
+                        didOpen: () => { 
+                            Swal.showLoading(); 
+                        } 
+                    });
 
-                    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ updateType: 'chot_so' }) })
+                    fetch(API_URL, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                        body: JSON.stringify({ updateType: 'chot_so' }) 
+                    })
                     .then(r => r.json())
                     .then(res => {
                         if(res.success) {
-                            Swal.fire({ title: 'Thành công!', text: res.message, icon: 'success', confirmButtonText: 'Đã hiểu' })
-                            .then(() => { globalData = []; loadedDataType = ""; loadData('all'); });
+                            Swal.fire({ 
+                                title: 'Thành công!', 
+                                text: res.message, 
+                                icon: 'success', 
+                                confirmButtonText: 'Đã hiểu' 
+                            }).then(() => { 
+                                globalData = []; 
+                                loadedDataType = ""; 
+                                loadData('all'); 
+                            });
                         } else {
                             Swal.fire('Lỗi hệ thống!', res.message, 'error');
                             showMenu();
                         }
                     })
-                    .catch(e => { Swal.fire('Lỗi kết nối!', 'Vui lòng kiểm tra lại mạng internet.', 'error'); showMenu(); });
+                    .catch(e => { 
+                        Swal.fire('Lỗi kết nối!', 'Vui lòng kiểm tra lại mạng internet.', 'error'); 
+                        showMenu(); 
+                    });
                 }
             });
         }
@@ -243,12 +265,16 @@
                         document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
                     }
                 })
-                .catch(error => { document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!'; });
+                .catch(error => { 
+                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!'; 
+                });
             }
         }
 
         function updateTableTitle() {
-            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') return; 
+            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') {
+                return; 
+            }
             const titles = {
                 'ds': 'Danh Sách Mặt Bằng',
                 'all': 'Danh Sách Thu',
@@ -289,7 +315,9 @@
                         document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
                     }
                 })
-                .catch(error => { document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!'; });
+                .catch(error => { 
+                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!'; 
+                });
             }
         }
 
@@ -311,7 +339,9 @@
             if (searchTerm !== '') {
                 filteredData = filteredData.filter(row => {
                     return Object.keys(row).some(key => {
-                        if (key === '_rowIndex' || key === '_sheetName') return false; 
+                        if (key === '_rowIndex' || key === '_sheetName') {
+                            return false; 
+                        }
                         let cellValue = String(row[key] || '').toLowerCase();
                         return cellValue.includes(searchTerm);
                     });
@@ -338,9 +368,11 @@
                 theadHtml += `<th class="col-action">Sửa</th>`;
             }
 
-            headers.forEach(header => { theadHtml += `<th>${header}</th>`; });
+            headers.forEach(header => { 
+                theadHtml += `<th>${header}</th>`; 
+            });
             
-            if(isActionView) {
+            if (isActionView) {
                 theadHtml += `<th class="col-action">Thao tác</th>`;
             }
             document.getElementById('tableHead').innerHTML = theadHtml;
@@ -358,7 +390,9 @@
                 let repGroups = {};
                 filteredData.forEach(row => {
                     let rep = row._daiDien.trim();
-                    if(!repGroups[rep]) repGroups[rep] = [];
+                    if(!repGroups[rep]) {
+                        repGroups[rep] = [];
+                    }
                     repGroups[rep].push(row);
                 });
 
@@ -411,7 +445,6 @@
                             }
                         });
                         
-                        // Lấy trạng thái hiện tại để hiển thị nút tương ứng (Đã sửa lỗi)
                         let rowStatus = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim().toLowerCase();
                         let isPaid = (rowStatus === 'đã đóng');
                         let actionBtnClass = isPaid ? 'undo-btn' : 'mark-btn';
@@ -444,28 +477,41 @@
                 let baseName = currentSheetName.replace('Chốt-', ''); 
                 if(baseName.includes('T') && baseName !== 'DS') {
                     let p = baseName.split(' ')[0].replace('T', '').split('-');
-                    if(p.length > 1) { extractedMonth = p[0]; extractedYear = "20" + p[1]; }
+                    if(p.length > 1) { 
+                        extractedMonth = p[0]; 
+                        extractedYear = "20" + p[1]; 
+                    }
                 }
 
                 filteredData.forEach(row => {
-                    if (currentViewMode === 'ds') { currentDataList.push(row); } 
+                    if (currentViewMode === 'ds') { 
+                        currentDataList.push(row); 
+                    } 
                     else if (currentViewMode === 'closed_data') {
                         let m = String(row['Tháng'] || '').trim();
                         let y = String(row['Năm'] || '').trim();
-                        if (m === extractedMonth && y === extractedYear) { currentDataList.push(row); } 
+                        if (m === extractedMonth && y === extractedYear) { 
+                            currentDataList.push(row); 
+                        } 
                         else {
                             let key = `T${m}-${y}`;
-                            if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                            if(!debtGroups[key]) {
+                                debtGroups[key] = { month: m, year: y, rows: [] };
+                            }
                             debtGroups[key].rows.push(row);
                         }
                     }
                     else { 
-                        if (row._sheetName.includes('T')) { currentDataList.push(row); } 
+                        if (row._sheetName.includes('T')) { 
+                            currentDataList.push(row); 
+                        } 
                         else if (row._sheetName === 'Nợ') {
                             let m = row['Tháng'] || '?';
                             let y = row['Năm'] || '?';
                             let key = `T${m}-${y}`;
-                            if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                            if(!debtGroups[key]) {
+                                debtGroups[key] = { month: m, year: y, rows: [] };
+                            }
                             debtGroups[key].rows.push(row);
                         }
                     }
@@ -519,8 +565,11 @@
                                 let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
                                 if(!isNaN(num)) {
                                     groupTotal += num;
-                                    if(isDebt) totalDebt += num;
-                                    else totalCurrent += num;
+                                    if(isDebt) {
+                                        totalDebt += num;
+                                    } else {
+                                        totalCurrent += num;
+                                    }
                                 }
                             }
                         });
@@ -554,12 +603,14 @@
                 let debtKeys = Object.keys(debtGroups);
                 if (debtKeys.length > 0) {
                     tbodyHtml += `<tr class="section-divider title-debt"><td colspan="${totalColumns}">Nợ</td></tr>`;
+                    
                     debtKeys.sort((a, b) => {
                         let ya = parseInt(debtGroups[a].year) || 0;
                         let yb = parseInt(debtGroups[b].year) || 0;
                         if (ya !== yb) return ya - yb;
                         return (parseInt(debtGroups[a].month) || 0) - (parseInt(debtGroups[b].month) || 0);
                     });
+                    
                     debtKeys.forEach(key => {
                         let group = debtGroups[key];
                         renderRowGroup(group.rows, `Nợ tháng ${group.month} năm ${group.year}`, true, group.month, group.year);
@@ -574,11 +625,14 @@
                 }
             } 
 
+            document.getElementById('tableBody').innerHTML = tbodyHtml;
+
             if(amountColumnIndex !== -1) {
                 if (currentViewMode === 'ds') {
                     let colspanLeft = amountColumnIndex + 1; 
                     let remainingCols = headers.length - amountColumnIndex - 1;
                     let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
+                    
                     document.getElementById('tableFoot').innerHTML = `
                         <tr class="total-row">
                             <td colspan="${colspanLeft}" style="text-align: right;">TỔNG CỘNG:</td>
@@ -588,6 +642,7 @@
                 } else if (currentViewMode === 'rep_search') {
                     let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                     let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
+                    
                     document.getElementById('tableFoot').innerHTML = `
                         <tr class="total-row" style="background-color: #343a40; color: white;">
                             <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG ĐANG HIỂN THỊ:</td>
@@ -598,6 +653,7 @@
                     let remainingCols = headers.length - amountColumnIndex - 1 + (isActionView ? 1 : 0);
                     let emptyCells = remainingCols > 0 ? `<td colspan="${remainingCols}"></td>` : '';
                     let grandTotal = totalCurrent + totalDebt;
+                    
                     document.getElementById('tableFoot').innerHTML = `
                         <tr class="total-row">
                             <td colspan="${amountColumnIndex}" style="text-align: right;">TỔNG CỘNG THU:</td>
@@ -625,76 +681,140 @@
                         <input id="swal-lydo" type="text" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box;" placeholder="VD: Bệnh, nghỉ bán..." value="${currentNote}">
                     </div>
                 `,
-                showCancelButton: true, confirmButtonText: 'Lưu thay đổi', cancelButtonText: 'Hủy bỏ', confirmButtonColor: '#17a2b8',
+                showCancelButton: true, 
+                confirmButtonText: 'Lưu thay đổi', 
+                cancelButtonText: 'Hủy bỏ', 
+                confirmButtonColor: '#17a2b8',
                 didOpen: () => {
                     const inputTien = document.getElementById('swal-tien');
-                    inputTien.addEventListener('input', function(e) { formatCurrencyInput(this); });
+                    inputTien.addEventListener('input', function(e) { 
+                        formatCurrencyInput(this); 
+                    });
                 },
                 preConfirm: () => {
                     let tien = document.getElementById('swal-tien').value;
                     let lydo = document.getElementById('swal-lydo').value;
-                    if (!lydo.trim()) { Swal.showValidationMessage('🛑 BẮT BUỘC phải nhập lý do miễn/giảm!'); return false; }
-                    if (tien.trim() === '') { Swal.showValidationMessage('🛑 Vui lòng nhập số tiền!'); return false; }
+                    if (!lydo.trim()) { 
+                        Swal.showValidationMessage('🛑 BẮT BUỘC phải nhập lý do miễn/giảm!'); 
+                        return false; 
+                    }
+                    if (tien.trim() === '') { 
+                        Swal.showValidationMessage('🛑 Vui lòng nhập số tiền!'); 
+                        return false; 
+                    }
                     return { tien: tien, note: lydo };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    let newTien = result.value.tien; let newNote = result.value.note;
-                    Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    let newTien = result.value.tien; 
+                    let newNote = result.value.note;
+
+                    Swal.fire({ 
+                        title: 'Đang xử lý...', 
+                        allowOutsideClick: false, 
+                        didOpen: () => { 
+                            Swal.showLoading(); 
+                        } 
+                    });
 
                     fetch(API_URL, {
-                        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'discount', tien: newTien, note: newNote })
-                    }).then(r => r.json()).then(res => {
+                    })
+                    .then(r => r.json())
+                    .then(res => {
                         if (res.success) {
-                            rowData['Thành tiền'] = newTien; rowData['Ghi chú'] = newNote; renderTable(); 
+                            rowData['Thành tiền'] = newTien; 
+                            rowData['Ghi chú'] = newNote; 
+                            renderTable(); 
                             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cập nhật thành công!', showConfirmButton: false, timer: 3000 });
-                        } else { Swal.fire('Lỗi!', res.message, 'error'); }
-                    }).catch(err => { Swal.fire('Lỗi kết nối!', 'Không thể kết nối đến máy chủ.', 'error'); });
+                        } else { 
+                            Swal.fire('Lỗi!', res.message, 'error'); 
+                        }
+                    })
+                    .catch(err => { 
+                        Swal.fire('Lỗi kết nối!', 'Không thể kết nối đến máy chủ.', 'error'); 
+                    });
                 }
             });
         }
 
         function editRowInfo(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
-            if (!rowData) return;
+            if (!rowData) {
+                return;
+            }
 
             let editableHeaders = Object.keys(rowData).filter(h => h !== '_rowIndex' && h !== '_sheetName' && h !== '_daiDien' && !h.toLowerCase().includes('đại diện') && !h.toLowerCase().includes('trạng thái'));
-            let optionsObj = {}; editableHeaders.forEach(h => { optionsObj[h] = h; });
+            
+            let optionsObj = {}; 
+            editableHeaders.forEach(h => { 
+                optionsObj[h] = h; 
+            });
 
             Swal.fire({
-                title: 'Chọn thông tin cần sửa', input: 'select', inputOptions: optionsObj, inputPlaceholder: '--- Chọn cột dữ liệu ---',
-                showCancelButton: true, confirmButtonText: 'Tiếp tục', cancelButtonText: 'Hủy'
+                title: 'Chọn thông tin cần sửa', 
+                input: 'select', 
+                inputOptions: optionsObj, 
+                inputPlaceholder: '--- Chọn cột dữ liệu ---',
+                showCancelButton: true, 
+                confirmButtonText: 'Tiếp tục', 
+                cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     let selectedColumn = result.value;
                     let currentValue = rowData[selectedColumn] !== undefined ? rowData[selectedColumn] : '';
                     
                     Swal.fire({
-                        title: `Chỉnh sửa: ${selectedColumn}`, input: 'text', inputValue: currentValue,
-                        showCancelButton: true, confirmButtonText: 'Lưu thay đổi', cancelButtonText: 'Quay lại', confirmButtonColor: '#007bff',
+                        title: `Chỉnh sửa: ${selectedColumn}`, 
+                        input: 'text', 
+                        inputValue: currentValue,
+                        showCancelButton: true, 
+                        confirmButtonText: 'Lưu thay đổi', 
+                        cancelButtonText: 'Quay lại', 
+                        confirmButtonColor: '#007bff',
                         didOpen: () => {
                             if (selectedColumn.toLowerCase().includes('tiền') || selectedColumn.toLowerCase().includes('mức thu')) {
                                 const inputEl = Swal.getInput();
-                                inputEl.addEventListener('input', function(e) { formatCurrencyInput(this); });
+                                inputEl.addEventListener('input', function(e) { 
+                                    formatCurrencyInput(this); 
+                                });
                             }
                         }
                     }).then((editResult) => {
                         if (editResult.isConfirmed) {
                             let newValue = editResult.value;
-                            if (newValue === currentValue) return;
+                            if (newValue === currentValue) {
+                                return;
+                            }
 
-                            Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                            Swal.fire({ 
+                                title: 'Đang lưu...', 
+                                allowOutsideClick: false, 
+                                didOpen: () => { 
+                                    Swal.showLoading(); 
+                                } 
+                            });
 
                             fetch(API_URL, {
-                                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                                 body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'edit_cell', colName: selectedColumn, value: newValue })
-                            }).then(r => r.json()).then(res => {
+                            })
+                            .then(r => r.json())
+                            .then(res => {
                                 if(res.success) {
-                                    rowData[selectedColumn] = newValue; renderTable(); 
+                                    rowData[selectedColumn] = newValue; 
+                                    renderTable(); 
                                     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã lưu thay đổi!', showConfirmButton: false, timer: 2000 });
-                                } else { Swal.fire('Lỗi!', res.message, 'error'); }
-                            }).catch(err => { Swal.fire('Lỗi kết nối!', 'Không thể kết nối đến máy chủ.', 'error'); });
+                                } else { 
+                                    Swal.fire('Lỗi!', res.message, 'error'); 
+                                }
+                            })
+                            .catch(err => { 
+                                Swal.fire('Lỗi kết nối!', 'Không thể kết nối đến máy chủ.', 'error'); 
+                            });
                         }
                     });
                 }
@@ -706,25 +826,45 @@
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
             
             Swal.fire({
-                title: 'Chỉnh sửa Ghi chú', input: 'text', inputLabel: `Nhập nội dung ghi chú mới:`, inputValue: currentNote,
-                showCancelButton: true, confirmButtonText: 'Lưu thay đổi', cancelButtonText: 'Hủy bỏ', confirmButtonColor: '#007bff'
+                title: 'Chỉnh sửa Ghi chú', 
+                input: 'text', 
+                inputLabel: `Nhập nội dung ghi chú mới:`, 
+                inputValue: currentNote,
+                showCancelButton: true, 
+                confirmButtonText: 'Lưu thay đổi', 
+                cancelButtonText: 'Hủy bỏ', 
+                confirmButtonColor: '#007bff'
             }).then((result) => {
                 if (result.isConfirmed) {
                     let newNote = result.value;
-                    if (newNote === currentNote) return; 
+                    if (newNote === currentNote) {
+                        return; 
+                    }
 
                     let noteElement = document.getElementById(`note-${rowSheetName}-${rowIndex}`);
-                    let oldText = noteElement.innerText; noteElement.innerText = "⏳..."; 
+                    let oldText = noteElement.innerText; 
+                    noteElement.innerText = "⏳..."; 
 
                     fetch(API_URL, {
-                        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'note', value: newNote })
-                    }).then(r => r.json()).then(res => {
+                    })
+                    .then(r => r.json())
+                    .then(res => {
                         if(res.success) {
-                            rowData['Ghi chú'] = newNote; noteElement.innerText = newNote; 
+                            rowData['Ghi chú'] = newNote; 
+                            noteElement.innerText = newNote; 
                             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã lưu ghi chú!', showConfirmButton: false, timer: 2000 });
-                        } else { Swal.fire('Lỗi!', res.message, 'error'); noteElement.innerText = oldText; }
-                    }).catch(err => { Swal.fire('Lỗi!', 'Không kết nối được.', 'error'); noteElement.innerText = oldText; });
+                        } else { 
+                            Swal.fire('Lỗi!', res.message, 'error'); 
+                            noteElement.innerText = oldText; 
+                        }
+                    })
+                    .catch(err => { 
+                        Swal.fire('Lỗi!', 'Không kết nối được.', 'error'); 
+                        noteElement.innerText = oldText; 
+                    });
                 }
             });
         }
@@ -736,39 +876,69 @@
             let confirmColor = isCollecting ? '#28a745' : '#dc3545';
 
             Swal.fire({
-                title: titleText, text: `Trạng thái chuyển thành: ${newStatus.toUpperCase()}`, icon: 'question',
-                showCancelButton: true, confirmButtonColor: confirmColor, cancelButtonColor: '#6c757d', confirmButtonText: confirmText, cancelButtonText: 'Hủy'
+                title: titleText, 
+                text: `Trạng thái chuyển thành: ${newStatus.toUpperCase()}`, 
+                icon: 'question',
+                showCancelButton: true, 
+                confirmButtonColor: confirmColor, 
+                cancelButtonColor: '#6c757d', 
+                confirmButtonText: confirmText, 
+                cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed) {
                     let originalText = btnElement.innerText;
-                    btnElement.innerText = "⏳..."; btnElement.disabled = true;
+                    btnElement.innerText = "⏳..."; 
+                    btnElement.disabled = true;
 
                     fetch(API_URL, {
-                        method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'status', value: newStatus })
-                    }).then(r => r.json()).then(res => {
+                    })
+                    .then(r => r.json())
+                    .then(res => {
                         if(res.success) {
                             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
-                            if(rowData) rowData['Trạng thái'] = newStatus;
+                            if(rowData) {
+                                rowData['Trạng thái'] = newStatus;
+                            }
                             
                             let tr = btnElement.closest('tr');
                             let badge = tr.querySelector('.status-badge');
-                            if (badge) { badge.innerText = newStatus; badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid'; }
+                            
+                            if (badge) { 
+                                badge.innerText = newStatus; 
+                                badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid'; 
+                            }
                             
                             if (isCollecting) {
-                                btnElement.innerText = "Hoàn tác"; btnElement.className = "undo-btn";
+                                btnElement.innerText = "Hoàn tác"; 
+                                btnElement.className = "undo-btn";
                                 btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
-                                if(!tr.style.backgroundColor) tr.classList.add('row-success'); 
+                                
+                                if(!tr.style.backgroundColor) {
+                                    tr.classList.add('row-success'); 
+                                }
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã thu tiền!', showConfirmButton: false, timer: 2000 });
                             } else {
-                                btnElement.innerText = "Đóng tiền"; btnElement.className = "mark-btn";
+                                btnElement.innerText = "Đóng tiền"; 
+                                btnElement.className = "mark-btn";
                                 btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'đã đóng')`);
                                 tr.classList.remove('row-success'); 
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Đã hoàn tác!', showConfirmButton: false, timer: 2000 });
                             }
                             btnElement.disabled = false;
-                        } else { Swal.fire('Lỗi!', res.message, 'error'); btnElement.innerText = originalText; btnElement.disabled = false; }
-                    }).catch(err => { Swal.fire('Lỗi!', 'Vui lòng kiểm tra mạng.', 'error'); btnElement.innerText = originalText; btnElement.disabled = false; });
+                        } else { 
+                            Swal.fire('Lỗi!', res.message, 'error'); 
+                            btnElement.innerText = originalText; 
+                            btnElement.disabled = false; 
+                        }
+                    })
+                    .catch(err => { 
+                        Swal.fire('Lỗi!', 'Vui lòng kiểm tra mạng.', 'error'); 
+                        btnElement.innerText = originalText; 
+                        btnElement.disabled = false; 
+                    });
                 }
             });
         }
