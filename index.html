@@ -361,7 +361,7 @@
                 headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
             }
 
-            // LOẠI BỎ 'rep_search' RA KHỎI ĐIỀU KIỆN HIỂN THỊ CỘT THAO TÁC
+            // LOẠI BỎ 'rep_search' RA KHỎI ĐIỀU KIỆN HIỂN THỊ CỘT THAO TÁC NÚT BẤM
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid' || currentViewMode === 'all');
             
             let theadHtml = '';
@@ -405,7 +405,26 @@
                     let blockColor = colorPalette[colorIdx % colorPalette.length];
                     colorIdx++;
 
-                    tbodyHtml += `<tr class="section-divider"><td colspan="${totalColumns}" style="background-color: #343a40 !important; color: #ffeb3b; text-align: left; padding-left: 20px;">👤 Hộ Kinh Doanh: ${repName.toUpperCase()}</td></tr>`;
+                    // PHẦN LOGIC THÔNG MINH PHÁT HIỆN THU SÓT:
+                    let hasPaid = false;
+                    let hasUnpaid = false;
+                    
+                    rows.forEach(r => {
+                        let st = String(r['Trạng thái'] || r['Trạng Thái'] || '').trim().toLowerCase();
+                        if (st === 'đã đóng') hasPaid = true;
+                        if (st === 'chưa đóng') hasUnpaid = true;
+                    });
+
+                    // Nếu có cả 2 trạng thái -> Lỗi thu sót. Nếu không -> Hợp lý
+                    let statusBadge = "";
+                    if (hasPaid && hasUnpaid) {
+                        statusBadge = `<span style="background-color: #dc3545; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="Hộ này có mặt bằng chưa nộp, có mặt bằng đã nộp">❌ Cảnh báo: Thu thiếu</span>`;
+                    } else {
+                        statusBadge = `<span style="background-color: #28a745; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="Dữ liệu đồng nhất">✅ Dữ liệu hợp lý</span>`;
+                    }
+
+                    // Thêm Badge vào tiêu đề khối
+                    tbodyHtml += `<tr class="section-divider"><td colspan="${totalColumns}" style="background-color: #343a40 !important; color: #ffeb3b; text-align: left; padding-left: 20px;">👤 Hộ Kinh Doanh: ${repName.toUpperCase()} ${statusBadge}</td></tr>`;
 
                     let groupTotal = 0;
 
@@ -446,7 +465,7 @@
                             }
                         });
                         
-                        // ĐÃ GỠ BỎ HOÀN TOÀN CỘT THAO TÁC (NÚT BẤM) Ở ĐÂY
+                        // TUYỆT ĐỐI KHÔNG CÓ CỘT THAO TÁC Ở ĐÂY
                         
                         tbodyHtml += `</tr>`;
                     });
