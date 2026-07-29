@@ -25,8 +25,11 @@
         table { width: 100%; border-collapse: collapse; min-width: 1000px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; }
         th { background-color: #343a40; color: white; position: sticky; top: 0; z-index: 10; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        tr:hover { background-color: #e9ecef; }
+        
+        /* Hiệu ứng rê chuột cho dòng bình thường */
+        tr:nth-child(even) td { background-color: #f2f2f2; transition: background-color 0.2s; }
+        tr:nth-child(odd) td { transition: background-color 0.2s; }
+        tr:hover td { background-color: #e9ecef; }
         
         .status-badge { padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; min-width: 80px; text-align: center;}
         .status-unpaid { background-color: #ffeeba; color: #856404; }
@@ -49,7 +52,11 @@
         .col-action { width: 90px; text-align: center; }
         
         .row-success td { background-color: #e8f5e9 !important; transition: background-color 0.5s ease; }
-        .row-debt td { background-color: #fff3cd !important; } 
+        
+        /* Hiệu ứng rê chuột ĐẶC BIỆT cho dòng Nợ */
+        .row-debt td { background-color: #fff3cd !important; transition: background-color 0.2s; } 
+        .row-debt:hover td { background-color: #ffe69c !important; } /* Vàng đậm hơn khi rê chuột */
+        
         .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
         .title-current { color: #333; }
         .title-debt { color: #d32f2f; }
@@ -110,7 +117,6 @@
         let currentViewMode = 'all'; 
         let loadedDataType = ""; 
 
-        // Hàm hỗ trợ định dạng số tiền có dấu chấm
         function formatCurrencyInput(inputElement) {
             let val = inputElement.value.replace(/[^0-9]/g, '');
             inputElement.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -503,7 +509,6 @@
             }
         }
 
-        // --- GIAO DIỆN MIỄN GIẢM MỚI ---
         function applyDiscount(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentTien = rowData['Thành tiền'] !== undefined ? rowData['Thành tiền'] : '';
@@ -526,7 +531,6 @@
                 confirmButtonColor: '#17a2b8',
                 didOpen: () => {
                     const inputTien = document.getElementById('swal-tien');
-                    // Gắn sự kiện tự động định dạng số tiền
                     inputTien.addEventListener('input', function(e) {
                         formatCurrencyInput(this);
                     });
@@ -581,7 +585,6 @@
             });
         }
 
-        // --- MENU DROPDOWN CHỌN CỘT CẦN SỬA ---
         function editRowInfo(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             if (!rowData) return;
@@ -613,7 +616,6 @@
                         cancelButtonText: 'Quay lại',
                         confirmButtonColor: '#007bff',
                         didOpen: () => {
-                            // Nếu sửa cột Tiền thì bật tính năng tự động định dạng số
                             if (selectedColumn.toLowerCase().includes('tiền') || selectedColumn.toLowerCase().includes('mức thu')) {
                                 const inputEl = Swal.getInput();
                                 inputEl.addEventListener('input', function(e) {
@@ -656,7 +658,6 @@
             });
         }
 
-        // Chức năng sửa ghi chú nhanh dành cho màn hình xem Thu tiền
         function editNote(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
