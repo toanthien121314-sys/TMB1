@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
-    <!-- Tích hợp thư viện Thông báo chuyên nghiệp SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
@@ -49,9 +48,7 @@
         .undo-btn:hover { background-color: #c82333; }
         .col-action { width: 90px; text-align: center; }
         
-        /* Hiệu ứng màu nền khi vừa thu tiền xong */
         .row-success td { background-color: #e8f5e9 !important; transition: background-color 0.5s ease; }
-        
         .row-debt td { background-color: #fff3cd !important; } 
         .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
         .title-current { color: #333; }
@@ -105,7 +102,7 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwYctQW750sW_B01MOffFJ8rJAVZrsCiprKrdpSIWYxT7P65udYQK54WFCD4qJjHSEj/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzcS4FyLF-jAUMOmLvh-XlbBq3KYnWYU-HEtZQMMksyXZsQYGywduADH37vNix7lNMd/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
@@ -117,7 +114,6 @@
             document.getElementById('screenTable').style.display = 'none';
         }
 
-        // --- GIAO DIỆN CHỐT SỔ MỚI ---
         function executeChotSo() {
             Swal.fire({
                 title: '⚠️ XÁC NHẬN CHỐT SỔ',
@@ -155,12 +151,8 @@
                     .then(r => r.json())
                     .then(res => {
                         if(res.success) {
-                            Swal.fire({
-                                title: 'Thành công!',
-                                text: res.message,
-                                icon: 'success',
-                                confirmButtonText: 'Đã hiểu'
-                            }).then(() => {
+                            Swal.fire({ title: 'Thành công!', text: res.message, icon: 'success', confirmButtonText: 'Đã hiểu' })
+                            .then(() => {
                                 globalData = []; 
                                 loadedDataType = "";
                                 loadData('all');
@@ -307,6 +299,12 @@
             }
 
             let headers = Object.keys(filteredData[0]).filter(h => h !== '_rowIndex' && h !== '_sheetName');
+            
+            // Nếu đang xem "DS mặt bằng", ẩn hẳn cột "Trạng thái"
+            if (currentViewMode === 'ds') {
+                headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
+            }
+
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid');
             
             let theadHtml = '';
@@ -379,19 +377,30 @@
                         let strVal = String(val).trim().toLowerCase();
                         let isClosed = (currentViewMode === 'closed_data');
                         
-                        if (header.toLowerCase().includes('ghi chú')) {
+                        // Ở màn hình DS (Bản mẫu), biến tất cả các ô thành có thể Edit
+                        if (currentViewMode === 'ds') {
                             tbodyHtml += `<td>
                                 <div class="note-container">
-                                    <span class="note-text" id="note-${row._sheetName}-${row._rowIndex}">${val}</span>
-                                    ${!isClosed ? `<span class="edit-icon" title="Sửa ghi chú" onclick="editNote('${row._sheetName}', ${row._rowIndex})">✏️</span>` : ''}
+                                    <span class="note-text" id="cell-${row._sheetName}-${row._rowIndex}-${index}">${val}</span>
+                                    <span class="edit-icon" title="Sửa ${header}" onclick="editCell('${row._sheetName}', ${row._rowIndex}, '${header}', ${index})">✏️</span>
                                 </div>
                             </td>`;
-                        } 
-                        else if (header.toLowerCase().includes('trạng thái')) {
-                            let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
-                            tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
                         } else {
-                            tbodyHtml += `<td>${val}</td>`;
+                            // Chế độ xem bình thường
+                            if (header.toLowerCase().includes('ghi chú')) {
+                                tbodyHtml += `<td>
+                                    <div class="note-container">
+                                        <span class="note-text" id="note-${row._sheetName}-${row._rowIndex}">${val}</span>
+                                        ${!isClosed ? `<span class="edit-icon" title="Sửa ghi chú" onclick="editNote('${row._sheetName}', ${row._rowIndex})">✏️</span>` : ''}
+                                    </div>
+                                </td>`;
+                            } 
+                            else if (header.toLowerCase().includes('trạng thái')) {
+                                let statusClass = strVal === 'chưa đóng' ? 'status-unpaid' : (strVal === 'đã đóng' ? 'status-paid' : '');
+                                tbodyHtml += `<td><span class="status-badge ${statusClass}">${val}</span></td>`;
+                            } else {
+                                tbodyHtml += `<td>${val}</td>`;
+                            }
                         }
 
                         if (header.toLowerCase() === 'thành tiền') {
@@ -474,7 +483,66 @@
             }
         }
 
-        // --- GIAO DIỆN SỬA GHI CHÚ MỚI ---
+        // --- HÀM MỚI: CHỈNH SỬA MỌI Ô TRONG DANH SÁCH MẶT BẰNG ---
+        function editCell(rowSheetName, rowIndex, headerName, cellIndex) {
+            let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
+            let currentValue = rowData[headerName] !== undefined ? rowData[headerName] : '';
+            
+            Swal.fire({
+                title: `Chỉnh sửa ${headerName}`,
+                input: 'text',
+                inputLabel: `Nhập giá trị mới cho ${headerName}:`,
+                inputValue: currentValue,
+                showCancelButton: true,
+                confirmButtonText: 'Lưu thay đổi',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#007bff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let newValue = result.value;
+                    if (newValue === currentValue) return; 
+
+                    let cellElement = document.getElementById(`cell-${rowSheetName}-${rowIndex}-${cellIndex}`);
+                    let oldText = cellElement.innerText;
+                    cellElement.innerText = "⏳..."; 
+
+                    fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({
+                            sheetName: rowSheetName, 
+                            rowIndex: rowIndex,
+                            updateType: 'edit_cell',
+                            colName: headerName,
+                            value: newValue
+                        })
+                    })
+                    .then(r => r.json())
+                    .then(res => {
+                        if(res.success) {
+                            rowData[headerName] = newValue; 
+                            cellElement.innerText = newValue; 
+                            
+                            // Nếu người dùng sửa giá tiền, vẽ lại bảng để tự động tính lại dòng Tổng Cộng
+                            if (headerName.toLowerCase() === 'thành tiền') {
+                                renderTable(); 
+                            }
+                            
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã lưu thay đổi!', showConfirmButton: false, timer: 2000 });
+                        } else {
+                            Swal.fire('Lỗi!', res.message, 'error');
+                            cellElement.innerText = oldText; 
+                        }
+                    })
+                    .catch(err => { 
+                        Swal.fire('Lỗi kết nối!', 'Không thể kết nối đến máy chủ.', 'error');
+                        cellElement.innerText = oldText; 
+                    });
+                }
+            });
+        }
+
+        // Dành riêng cho sửa Ghi chú ở màn hình bình thường
         function editNote(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentNote = rowData['Ghi chú'] !== undefined ? rowData['Ghi chú'] : '';
@@ -510,13 +578,9 @@
                     .then(r => r.json())
                     .then(res => {
                         if(res.success) {
-                            // Cập nhật DOM trực tiếp thay vì render lại cả bảng
                             rowData['Ghi chú'] = newNote; 
                             noteElement.innerText = newNote; 
-                            Swal.fire({
-                                toast: true, position: 'top-end', icon: 'success',
-                                title: 'Đã lưu ghi chú thành công!', showConfirmButton: false, timer: 2000
-                            });
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã lưu ghi chú thành công!', showConfirmButton: false, timer: 2000 });
                         } else {
                             Swal.fire('Lỗi!', res.message, 'error');
                             noteElement.innerText = oldText; 
@@ -530,7 +594,6 @@
             });
         }
 
-        // --- GIAO DIỆN THU TIỀN / HOÀN TÁC MỚI (KHÔNG LÀM MẤT DÒNG) ---
         function updateStatus(rowSheetName, rowIndex, btnElement, newStatus) {
             let isCollecting = (newStatus === 'đã đóng');
             let titleText = isCollecting ? 'Xác nhận thu tiền?' : 'Xác nhận hoàn tác?';
@@ -568,7 +631,6 @@
                             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
                             if(rowData) rowData['Trạng thái'] = newStatus;
                             
-                            // Cập nhật DOM trực tiếp (Không gọi renderTable để giữ nguyên dòng)
                             let tr = btnElement.closest('tr');
                             let badge = tr.querySelector('.status-badge');
                             
@@ -581,18 +643,15 @@
                                 btnElement.innerText = "Hoàn tác";
                                 btnElement.className = "undo-btn";
                                 btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
-                                tr.classList.add('row-success'); // Đổi màu nền xanh nhạt báo hiệu đã thu
-                                
+                                tr.classList.add('row-success'); 
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã thu tiền!', showConfirmButton: false, timer: 2000 });
                             } else {
                                 btnElement.innerText = "Thu tiền";
                                 btnElement.className = "mark-btn";
                                 btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'đã đóng')`);
-                                tr.classList.remove('row-success'); // Xóa màu nền xanh
-                                
+                                tr.classList.remove('row-success'); 
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Đã hoàn tác!', showConfirmButton: false, timer: 2000 });
                             }
-                            
                             btnElement.disabled = false;
                         } else {
                             Swal.fire('Lỗi!', res.message, 'error');
