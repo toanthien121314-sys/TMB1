@@ -40,12 +40,15 @@
         .edit-icon:hover { opacity: 1; transform: scale(1.3); }
         .note-text { flex-grow: 1; }
         
-        .top-controls { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+        .top-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .left-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center;}
+        
         .back-btn { background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .search-box { flex-grow: 1; max-width: 400px; }
         .search-box input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
         
-        .nv-select { padding: 10px; border-radius: 5px; border: 1px solid #ced4da; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; }
+        .nv-select { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; }
+        .date-input-filter { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; width: 180px; box-sizing: border-box;}
         
         .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; margin-bottom: 3px;}
         .mark-btn:hover { background-color: #218838; }
@@ -88,16 +91,21 @@
 
     <div id="screenTable" style="display: none;">
         <div class="top-controls">
-            <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
-            
-            <!-- THANH CHỌN NHÂN VIÊN THU TIỀN -->
-            <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
-                <option value="">-- Chọn nhân viên --</option>
-                <option value="A">Nhân viên A</option>
-                <option value="B">Nhân viên B</option>
-                <option value="C">Nhân viên C</option>
-            </select>
+            <!-- Cụm chức năng lọc nằm bên trái -->
+            <div class="left-controls">
+                <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
+                
+                <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
+                    <option value="">-- Chọn nhân viên --</option>
+                    <option value="A">Nhân viên A</option>
+                    <option value="B">Nhân viên B</option>
+                    <option value="C">Nhân viên C</option>
+                </select>
 
+                <input type="text" id="dateInput" class="date-input-filter" style="display:none;" placeholder="Chọn ngày đóng..." onkeyup="renderTable()">
+            </div>
+
+            <!-- Khung tìm kiếm nằm bên phải -->
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Tìm tên, lô, ngành hàng..." onkeyup="renderTable()">
             </div>
@@ -258,8 +266,9 @@
             document.getElementById('loading').style.display = 'block';
             document.getElementById('searchInput').value = '';
             
-            let nvSelect = document.getElementById('nvSelect');
-            nvSelect.style.display = 'none';
+            // Ẩn thanh công cụ NV và Ngày khi xem Đại diện
+            document.getElementById('nvSelect').style.display = 'none';
+            document.getElementById('dateInput').style.display = 'none';
             
             if(globalData.length > 0 && loadedDataType === targetType) {
                 updateTableTitle();
@@ -312,15 +321,23 @@
             document.getElementById('searchInput').value = '';
 
             let nvSelect = document.getElementById('nvSelect');
+            let dateInput = document.getElementById('dateInput');
+            
+            // Xử lý hiển thị thanh công cụ tuỳ chế độ
             if (viewMode === 'mark_paid' || viewMode === 'paid') {
                 nvSelect.style.display = 'inline-block';
+                dateInput.style.display = 'inline-block';
+                
                 if (viewMode === 'mark_paid') {
-                    nvSelect.options[0].text = "-- BẮT BUỘC CHỌN NHÂN VIÊN THU --";
+                    nvSelect.options[0].text = "-- BẮT BUỘC CHỌN NV --";
+                    dateInput.style.display = 'none'; // Chế độ đóng tiền không cần ô lọc ngày
                 } else {
-                    nvSelect.options[0].text = "-- Xem tổng tất cả NV --";
+                    nvSelect.options[0].text = "-- Tất cả nhân viên --";
                 }
             } else {
                 nvSelect.style.display = 'none';
+                dateInput.style.display = 'none';
+                dateInput.value = '';
             }
 
             if(globalData.length > 0 && loadedDataType === targetType) {
@@ -353,18 +370,35 @@
             
             let filteredData = globalData;
             let searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
-            let selectedNV = document.getElementById('nvSelect').value;
+            
+            let selectedNV = document.getElementById('nvSelect').value.toLowerCase();
+            let dateElement = document.getElementById('dateInput');
+            let selectedDate = dateElement ? dateElement.value.trim().toLowerCase() : "";
 
+            // LOGIC LỌC TỐI ƯU CHO DANH SÁCH ĐÃ ĐÓNG
             if (currentViewMode === 'paid') {
                 filteredData = globalData.filter(row => {
                     let st = String(row['Trạng thái'] || '').trim().toLowerCase();
                     return st !== 'chưa đóng' && st !== '';
                 });
                 
-                if (selectedNV !== "") {
+                if (selectedNV !== "" || selectedDate !== "") {
                     filteredData = filteredData.filter(row => {
-                        let st = String(row['Trạng thái'] || '').trim().toUpperCase();
-                        return st.startsWith(selectedNV.toUpperCase());
+                        let st = String(row['Trạng thái'] || '').trim().toLowerCase();
+                        
+                        // 1. Có chọn NV và Có gõ ngày (VD: B26s)
+                        if (selectedNV !== "" && selectedDate !== "") {
+                            return st === (selectedNV + selectedDate);
+                        } 
+                        // 2. Chỉ chọn NV (VD: B)
+                        else if (selectedNV !== "") {
+                            return st.startsWith(selectedNV);
+                        } 
+                        // 3. Chỉ gõ ngày (VD: 26s)
+                        else if (selectedDate !== "") {
+                            return st.endsWith(selectedDate);
+                        }
+                        return true;
                     });
                 }
             } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
@@ -667,7 +701,7 @@
                         } else if (currentViewMode === 'paid') {
                             tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                         } else if (currentViewMode === 'all') {
-                            // Ở ĐÂY CHỈ HIỂN THỊ DUY NHẤT NÚT MIỄN GIẢM TRONG DANH SÁCH THU
+                            // ĐÃ KHẮC PHỤC HOÀN TOÀN: Danh sách thu CHỈ CÒN DUY NHẤT nút Miễn/Giảm
                             tbodyHtml += `<td class="col-action normal-cell">
                                 <button class="mark-btn" style="background-color: #17a2b8; min-width: 90px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button>
                             </td>`;
@@ -974,7 +1008,7 @@
                     title: 'Nhập ngày thu tiền',
                     input: 'text',
                     inputLabel: `Sẽ được gắn với mã nhân viên: ${selectedNV}`,
-                    inputPlaceholder: 'Ví dụ: 29',
+                    inputPlaceholder: 'Ví dụ: 29s',
                     showCancelButton: true,
                     confirmButtonText: 'Xác nhận thu',
                     cancelButtonText: 'Hủy',
