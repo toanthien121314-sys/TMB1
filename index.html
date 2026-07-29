@@ -361,7 +361,8 @@
                 headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
             }
 
-            let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid' || currentViewMode === 'all' || currentViewMode === 'rep_search');
+            // LOẠI BỎ 'rep_search' RA KHỎI ĐIỀU KIỆN HIỂN THỊ CỘT THAO TÁC
+            let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid' || currentViewMode === 'all');
             
             let theadHtml = '';
             if (currentViewMode === 'ds') {
@@ -445,16 +446,8 @@
                             }
                         });
                         
-                        let rowStatus = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim().toLowerCase();
-                        let isPaid = (rowStatus === 'đã đóng');
-                        let actionBtnClass = isPaid ? 'undo-btn' : 'mark-btn';
-                        let actionBtnText = isPaid ? 'Hoàn tác' : 'Đóng tiền';
-                        let actionTarget = isPaid ? 'chưa đóng' : 'đã đóng';
-
-                        tbodyHtml += `<td class="col-action" style="background-color: ${blockColor} !important;">
-                             <button class="mark-btn" style="background-color: #17a2b8; min-width: 90px; margin-bottom: 5px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button><br>
-                             <button class="${actionBtnClass}" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, '${actionTarget}')">${actionBtnText}</button>
-                        </td>`;
+                        // ĐÃ GỠ BỎ HOÀN TOÀN CỘT THAO TÁC (NÚT BẤM) Ở ĐÂY
+                        
                         tbodyHtml += `</tr>`;
                     });
 
