@@ -361,7 +361,6 @@
                 headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
             }
 
-            // LOẠI BỎ 'rep_search' RA KHỎI ĐIỀU KIỆN HIỂN THỊ CỘT THAO TÁC NÚT BẤM
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid' || currentViewMode === 'all');
             
             let theadHtml = '';
@@ -405,25 +404,71 @@
                     let blockColor = colorPalette[colorIdx % colorPalette.length];
                     colorIdx++;
 
-                    // PHẦN LOGIC THÔNG MINH PHÁT HIỆN THU SÓT:
-                    let hasPaid = false;
-                    let hasUnpaid = false;
-                    
+                    // --- BỘ NÃO KIỂM TRA CHÉO (DÒ SÓT/THIẾU) ---
+                    let monthCounts = {};
+                    let isWarning = false;
+                    let warningReason = "";
+
+                    // Đếm số lượng mặt bằng theo từng tháng
                     rows.forEach(r => {
+                        let isOldDebt = r._sheetName === 'Nợ';
+                        let m = r['Tháng'];
+                        let y = r['Năm'];
+                        let periodKey = isOldDebt ? `Nợ T${m}-${y}` : `T${m}-${y}`;
+
+                        if (!monthCounts[periodKey]) {
+                            monthCounts[periodKey] = { total: 0, paid: 0, unpaid: 0 };
+                        }
+                        
+                        monthCounts[periodKey].total++;
+
                         let st = String(r['Trạng thái'] || r['Trạng Thái'] || '').trim().toLowerCase();
-                        if (st === 'đã đóng') hasPaid = true;
-                        if (st === 'chưa đóng') hasUnpaid = true;
+                        if (st === 'đã đóng') {
+                            monthCounts[periodKey].paid++;
+                        }
+                        if (st === 'chưa đóng') {
+                            monthCounts[periodKey].unpaid++;
+                        }
                     });
 
-                    // Nếu có cả 2 trạng thái -> Lỗi thu sót. Nếu không -> Hợp lý
-                    let statusBadge = "";
-                    if (hasPaid && hasUnpaid) {
-                        statusBadge = `<span style="background-color: #dc3545; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="Hộ này có mặt bằng chưa nộp, có mặt bằng đã nộp">❌ Cảnh báo: Thu thiếu</span>`;
-                    } else {
-                        statusBadge = `<span style="background-color: #28a745; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="Dữ liệu đồng nhất">✅ Dữ liệu hợp lý</span>`;
+                    // Xác định tháng hiện tại (không phải Nợ) làm mốc so sánh
+                    let currentPeriodKey = null;
+                    for (let key in monthCounts) {
+                        if (!key.startsWith('Nợ')) {
+                            currentPeriodKey = key;
+                            break;
+                        }
+                    }
+                    
+                    let baselineCount = currentPeriodKey ? monthCounts[currentPeriodKey].total : 0;
+
+                    // Kiểm tra 2 điều kiện cảnh báo
+                    for (let key in monthCounts) {
+                        // Điều kiện 1: Trong cùng 1 tháng có cả Đã đóng và Chưa đóng
+                        if (monthCounts[key].paid > 0 && monthCounts[key].unpaid > 0) {
+                            isWarning = true;
+                            warningReason = `Tháng ${key} có mặt bằng chưa thu tiền`;
+                            break;
+                        }
+                        // Điều kiện 2: Số lượng mặt bằng của tháng Nợ khác với tháng hiện tại
+                        if (baselineCount > 0 && key.startsWith('Nợ')) {
+                            if (monthCounts[key].total !== baselineCount) {
+                                isWarning = true;
+                                warningReason = `Số lượng mặt bằng ${key} không khớp với tháng hiện tại`;
+                                break;
+                            }
+                        }
                     }
 
-                    // Thêm Badge vào tiêu đề khối
+                    // Xuất kết quả huy hiệu
+                    let statusBadge = "";
+                    if (isWarning) {
+                        statusBadge = `<span style="background-color: #dc3545; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="${warningReason}">❌ Cảnh báo: Thu sót/thiếu</span>`;
+                    } else {
+                        statusBadge = `<span style="background-color: #28a745; color: #fff; font-size: 13px; padding: 4px 10px; border-radius: 12px; margin-left: 15px; font-weight: normal; border: 1px solid #fff;" title="Dữ liệu đồng nhất, số lượng mặt bằng khớp nhau">✅ Dữ liệu hợp lý</span>`;
+                    }
+                    // ------------------------------------------
+
                     tbodyHtml += `<tr class="section-divider"><td colspan="${totalColumns}" style="background-color: #343a40 !important; color: #ffeb3b; text-align: left; padding-left: 20px;">👤 Hộ Kinh Doanh: ${repName.toUpperCase()} ${statusBadge}</td></tr>`;
 
                     let groupTotal = 0;
@@ -464,8 +509,6 @@
                                 }
                             }
                         });
-                        
-                        // TUYỆT ĐỐI KHÔNG CÓ CỘT THAO TÁC Ở ĐÂY
                         
                         tbodyHtml += `</tr>`;
                     });
