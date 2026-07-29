@@ -93,8 +93,9 @@
             <!-- THANH CHỌN NHÂN VIÊN THU TIỀN -->
             <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
                 <option value="">-- Chọn nhân viên --</option>
-                <option value="T">Trần Thanh Tú</option>
-                <option value="L">Quách Hoàng Lộc</option>
+                <option value="A">Nhân viên A</option>
+                <option value="B">Nhân viên B</option>
+                <option value="C">Nhân viên C</option>
             </select>
 
             <div class="search-box">
@@ -661,12 +662,12 @@
                             }
                         });
                         
-                        // ĐÃ SỬA LỖI: CHỈ GIỮ LẠI NÚT MIỄN GIẢM TRONG "DANH SÁCH THU"
                         if(currentViewMode === 'mark_paid') {
                             tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'PAY')">Đóng tiền</button></td>`;
                         } else if (currentViewMode === 'paid') {
                             tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                         } else if (currentViewMode === 'all') {
+                            // Ở ĐÂY CHỈ HIỂN THỊ DUY NHẤT NÚT MIỄN GIẢM TRONG DANH SÁCH THU
                             tbodyHtml += `<td class="col-action normal-cell">
                                 <button class="mark-btn" style="background-color: #17a2b8; min-width: 90px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button>
                             </td>`;
@@ -959,7 +960,6 @@
             });
         }
 
-        // ĐÃ CHỈNH SỬA TOÀN BỘ LOGIC UPDATE STATUS ĐỂ NGƯỜI DÙNG TỰ NHẬP NGÀY
         function updateStatus(rowSheetName, rowIndex, btnElement, actionTarget) {
             let isCollecting = (actionTarget === 'PAY');
 
@@ -970,7 +970,6 @@
                     return;
                 }
 
-                // BẬT POPUP YÊU CẦU NHẬP NGÀY THỦ CÔNG
                 Swal.fire({
                     title: 'Nhập ngày thu tiền',
                     input: 'text',
@@ -1011,7 +1010,6 @@
             }
         }
 
-        // HÀM CHUYÊN XỬ LÝ LƯU SERVER (ĐÃ TÁCH TỪ UPDATE STATUS CŨ)
         function executePaymentRequest(rowSheetName, rowIndex, btnElement, finalStatus, isCollecting) {
             let originalText = btnElement.innerText;
             btnElement.innerText = "⏳..."; 
