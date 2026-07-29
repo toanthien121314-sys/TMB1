@@ -68,13 +68,12 @@
     <div id="screenMenu">
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
         <div class="menu-container">
-            <!-- Đã đổi tên hiển thị khớp chuẩn với hình ảnh -->
             <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng</button>
             <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách thu</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Xem đã đóng</button>
             <button class="menu-btn btn-unpaid" onclick="loadData('unpaid')">⚠️ Xem chưa đóng</button>
             <button class="menu-btn btn-closed" onclick="loadClosedList()">📁 Danh sách đã chốt</button>
-            <button class="menu-btn btn-action" onclick="loadData('mark_paid')">💳 đóng tiền</button>
+            <button class="menu-btn btn-action" onclick="loadData('mark_paid')">💳 Đóng tiền</button>
             <button class="menu-btn btn-chotso" onclick="executeChotSo()">🔒 CHỐT SỔ & CHUYỂN KỲ MỚI</button>
         </div>
     </div>
@@ -103,12 +102,19 @@
     </div>
 
     <script>
+        // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
         const API_URL = 'https://script.google.com/macros/s/AKfycbzriC3wz4-xR2kUJMJ4iXGahS1Y5RPXAjqM8v5zkSYcRB0uAhj_izqb9DD8iG5RfRha/exec';
         
         let globalData = []; 
         let currentSheetName = ""; 
         let currentViewMode = 'all'; 
         let loadedDataType = ""; 
+
+        // Hàm hỗ trợ định dạng số tiền có dấu chấm
+        function formatCurrencyInput(inputElement) {
+            let val = inputElement.value.replace(/[^0-9]/g, '');
+            inputElement.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
 
         function showMenu() {
             document.getElementById('screenMenu').style.display = 'block';
@@ -298,7 +304,6 @@
                 headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
             }
 
-            // Đã cập nhật isActionView để áp dụng luôn cho phần 'all' (Danh sách thu xanh biển)
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid' || currentViewMode === 'all');
             
             let theadHtml = '';
@@ -415,13 +420,11 @@
                         }
                     });
                     
-                    // XỬ LÝ CỘT THAO TÁC (THÊM MIỄN/GIẢM Ở VIEW TỔNG HỢP)
                     if(currentViewMode === 'mark_paid') {
                         tbodyHtml += `<td class="col-action"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'đã đóng')">Thu tiền</button></td>`;
                     } else if (currentViewMode === 'paid') {
                         tbodyHtml += `<td class="col-action"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                     } else if (currentViewMode === 'all') {
-                        // Nút Miễn/Giảm hiển thị ở tab "Danh sách thu"
                         tbodyHtml += `<td class="col-action"><button class="mark-btn" style="background-color: #17a2b8; min-width: 90px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button></td>`;
                     }
 
@@ -500,7 +503,7 @@
             }
         }
 
-        // --- HÀM MỚI: TÍNH NĂNG MIỄN/GIẢM BẮT BUỘC NHẬP GHI CHÚ ---
+        // --- GIAO DIỆN MIỄN GIẢM MỚI ---
         function applyDiscount(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentTien = rowData['Thành tiền'] !== undefined ? rowData['Thành tiền'] : '';
@@ -509,18 +512,25 @@
             Swal.fire({
                 title: 'Thực hiện Miễn / Giảm',
                 html: `
-                    <div style="text-align: left; font-size: 14px; margin-top: 10px;">
-                        <label style="font-weight: bold; color: #333;">Số tiền mới (VNĐ):</label>
-                        <input id="swal-tien" type="text" class="swal2-input" style="margin-top: 5px; margin-bottom: 15px; display:flex;" placeholder="Nhập 0 nếu miễn hoàn toàn" value="${currentTien}">
+                    <div style="text-align: left; padding: 0 5px;">
+                        <label style="font-weight: bold; color: #333; display: block; margin-bottom: 5px;">Số tiền mới (VNĐ):</label>
+                        <input id="swal-tien" type="text" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0 0 15px 0; box-sizing: border-box;" placeholder="Nhập 0 nếu miễn hoàn toàn" value="${currentTien}">
                         
-                        <label style="font-weight: bold; color: #dc3545;">Lý do (Bắt buộc phải nhập):</label>
-                        <input id="swal-lydo" type="text" class="swal2-input" style="margin-top: 5px; display:flex;" placeholder="VD: Bệnh, nghỉ bán..." value="${currentNote}">
+                        <label style="font-weight: bold; color: #dc3545; display: block; margin-bottom: 5px;">Lý do (Bắt buộc phải nhập):</label>
+                        <input id="swal-lydo" type="text" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box;" placeholder="VD: Bệnh, nghỉ bán..." value="${currentNote}">
                     </div>
                 `,
                 showCancelButton: true,
                 confirmButtonText: 'Lưu thay đổi',
                 cancelButtonText: 'Hủy bỏ',
                 confirmButtonColor: '#17a2b8',
+                didOpen: () => {
+                    const inputTien = document.getElementById('swal-tien');
+                    // Gắn sự kiện tự động định dạng số tiền
+                    inputTien.addEventListener('input', function(e) {
+                        formatCurrencyInput(this);
+                    });
+                },
                 preConfirm: () => {
                     let tien = document.getElementById('swal-tien').value;
                     let lydo = document.getElementById('swal-lydo').value;
@@ -530,7 +540,7 @@
                         return false;
                     }
                     if (tien.trim() === '') {
-                        Swal.showValidationMessage('🛑 Vui lòng nhập số tiền (nhập 0 nếu miễn hoàn toàn)!');
+                        Swal.showValidationMessage('🛑 Vui lòng nhập số tiền!');
                         return false;
                     }
                     return { tien: tien, note: lydo };
@@ -558,7 +568,7 @@
                         if (res.success) {
                             rowData['Thành tiền'] = newTien;
                             rowData['Ghi chú'] = newNote;
-                            renderTable(); // Vẽ lại để cập nhật dòng Tổng Cộng ngay lập tức
+                            renderTable(); 
                             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã cập nhật Miễn/Giảm thành công!', showConfirmButton: false, timer: 3000 });
                         } else {
                             Swal.fire('Lỗi!', res.message, 'error');
@@ -601,7 +611,16 @@
                         showCancelButton: true,
                         confirmButtonText: 'Lưu thay đổi',
                         cancelButtonText: 'Quay lại',
-                        confirmButtonColor: '#007bff'
+                        confirmButtonColor: '#007bff',
+                        didOpen: () => {
+                            // Nếu sửa cột Tiền thì bật tính năng tự động định dạng số
+                            if (selectedColumn.toLowerCase().includes('tiền') || selectedColumn.toLowerCase().includes('mức thu')) {
+                                const inputEl = Swal.getInput();
+                                inputEl.addEventListener('input', function(e) {
+                                    formatCurrencyInput(this);
+                                });
+                            }
+                        }
                     }).then((editResult) => {
                         if (editResult.isConfirmed) {
                             let newValue = editResult.value;
@@ -738,7 +757,7 @@
                                 tr.classList.add('row-success'); 
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã thu tiền!', showConfirmButton: false, timer: 2000 });
                             } else {
-                                btnElement.innerText = "Thu tiền";
+                                btnElement.innerText = "Đóng tiền";
                                 btnElement.className = "mark-btn";
                                 btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'đã đóng')`);
                                 tr.classList.remove('row-success'); 
