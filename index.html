@@ -765,13 +765,13 @@
             let dateElement = document.getElementById('dateInput');
             let selectedDate = dateElement ? dateElement.value.trim().toLowerCase() : "";
 
-            // KHÔI PHỤC LỖI: Trả lại 'mark_paid' hiển thị ĐẦY ĐỦ y như lúc đầu
             if (currentViewMode === 'paid') {
                 filteredData = globalData.filter(row => {
                     let st = String(row['Trạng thái'] || '').trim().toLowerCase();
                     return st !== 'chưa đóng' && st !== '';
                 });
-            } else if (currentViewMode === 'unpaid') { // ĐÃ GỠ BỎ 'mark_paid' KHỎI ĐÂY
+            } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
+                // KHÔI PHỤC: mark_paid (Đóng tiền) sẽ khởi đầu bằng danh sách "chưa đóng"
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
             } else if (currentViewMode === 'rep_search') {
                 filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
@@ -1042,10 +1042,6 @@
                             </td>`;
                         }
 
-                        // SỬA LỖI: Lấy trạng thái của dòng để xét hiển thị nút Hoàn tác hay Đóng tiền
-                        let st = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim().toLowerCase();
-                        let isPaid = (st !== 'chưa đóng' && st !== '');
-
                         headers.forEach((header, index) => {
                             let val = row[header] !== undefined ? row[header] : '';
                             let strVal = String(val).trim().toLowerCase();
@@ -1063,6 +1059,7 @@
                                     </td>`;
                                 } 
                                 else if (header.toLowerCase().includes('trạng thái')) {
+                                    let isPaid = (strVal !== 'chưa đóng' && strVal !== '');
                                     let statusClass = isPaid ? 'status-paid' : 'status-unpaid';
                                     let displayVal = isPaid ? val : 'chưa đóng';
                                     tbodyHtml += `<td class="normal-cell"><span class="status-badge ${statusClass}">${displayVal}</span></td>`;
@@ -1085,13 +1082,8 @@
                             }
                         });
                         
-                        // KHÔI PHỤC LỖI: Hiển thị đúng nút Dựa trên Trạng thái
                         if(currentViewMode === 'mark_paid') {
-                            if (isPaid) {
-                                tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
-                            } else {
-                                tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'PAY')">Đóng tiền</button></td>`;
-                            }
+                            tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'PAY')">Đóng tiền</button></td>`;
                         } else if (currentViewMode === 'paid') {
                             tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                         } else if (currentViewMode === 'all') {
@@ -1509,13 +1501,32 @@
                         rowData['Trạng thái'] = finalStatus;
                     }
                     
-                    renderTable();
+                    // --- KHÔI PHỤC LẠI LOGIC GỐC CỦA BẠN: Sửa trực tiếp trên giao diện (DOM) ---
+                    let tr = btnElement.closest('tr');
+                    let badge = tr.querySelector('.status-badge');
+                    
+                    if (badge) { 
+                        badge.innerText = finalStatus; 
+                        badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid'; 
+                    }
                     
                     if (isCollecting) {
+                        btnElement.innerText = "Hoàn tác"; 
+                        btnElement.className = "undo-btn";
+                        btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
+                        
+                        if(!tr.style.backgroundColor) {
+                            tr.classList.add('row-success'); 
+                        }
                         showCustomToast('Đã thu tiền!', 'success');
                     } else {
+                        btnElement.innerText = "Đóng tiền"; 
+                        btnElement.className = "mark-btn";
+                        btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'PAY')`);
+                        tr.classList.remove('row-success'); 
                         showCustomToast('Đã hoàn tác!', 'info');
                     }
+                    btnElement.disabled = false;
                 } else { 
                     Swal.fire({
                         title: 'Lỗi!', 
