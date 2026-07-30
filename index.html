@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* --- ÉP DUY NHẤT 1 THANH CUỘN VÀ CHỐNG GIẬT MÀN HÌNH --- */
@@ -497,11 +500,13 @@
             });
         }
 
-        window.onload = async function() {
+window.onload = async function() {
             try {
-                let pDs = fetch(API_URL + "?type=ds").then(r => r.json());
-                let pCurrent = fetch(API_URL + "?type=current").then(r => r.json());
-                let pClosedList = fetch(API_URL + "?type=closed_list").then(r => r.json());
+                let timeStamp = new Date().getTime();
+                // Phải nối thêm &t=" + timeStamp vào cuối như thế này:
+                let pDs = fetch(API_URL + "?type=ds&t=" + timeStamp).then(r => r.json());
+                let pCurrent = fetch(API_URL + "?type=current&t=" + timeStamp).then(r => r.json());
+                let pClosedList = fetch(API_URL + "?type=closed_list&t=" + timeStamp).then(r => r.json());
 
                 let [resDs, resCurrent, resClosedList] = await Promise.all([pDs, pCurrent, pClosedList]);
 
