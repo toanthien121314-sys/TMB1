@@ -587,18 +587,34 @@
         function executeChotSo() {
             Swal.fire({
                 title: '⚠️ XÁC NHẬN CHỐT SỔ',
-                html: "<div style='text-align:left; font-size:15px; margin-top:10px;'>" +
+                html: "<div style='text-align:left; font-size:15px; margin-top:10px; margin-bottom: 15px;'>" +
                       "Hệ thống sẽ tự động thực hiện:<br><br>" +
                       "<b>1.</b> Gom hộ Đã Đóng vào File lưu trữ tại thư mục 'Chốt sổ'.<br>" +
                       "<b>2.</b> Gom hộ Chưa Đóng chuyển toàn bộ sang Sổ Nợ.<br>" +
                       "<b>3.</b> Khởi tạo danh sách thu cho kỳ tiếp theo.</div>",
                 icon: 'warning',
+                input: 'text', 
+                inputAttributes: {
+                    inputmode: 'numeric',
+                    pattern: '[0-9]*',
+                    autocomplete: 'off',
+                    style: '-webkit-text-security: disc;' 
+                },
+                inputLabel: 'MẬT MÃ XÁC NHẬN:',
+                inputPlaceholder: 'Nhập mật mã để chốt sổ...',
                 showCancelButton: true,
                 confirmButtonColor: '#343a40',
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'Tiến hành Chốt Sổ',
                 cancelButtonText: 'Hủy bỏ',
-                scrollbarPadding: false 
+                scrollbarPadding: false,
+                preConfirm: (pin) => {
+                    if (pin !== '210799') { 
+                        Swal.showValidationMessage('❌ Mật mã không chính xác!');
+                        return false;
+                    }
+                    return true;
+                }
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({ 
@@ -1766,7 +1782,6 @@
                 `;
             });
 
-            // THÊM CHỐT TỔNG NỢ VÀ THU Ở DƯỚI CÙNG FILE EXCEL
             excelHtml += `
             <tr><td colspan="11" class="no-border"></td></tr>
             <tr>
