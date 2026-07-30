@@ -6,13 +6,15 @@
     <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* --- ĐỔ BÊ TÔNG THANH CUỘN CHỐNG GIẬT MÀN HÌNH HỆ THỐNG --- */
-        html { overflow-y: scroll; } /* Luôn chừa sẵn không gian cho thanh cuộn */
-        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
-            overflow-y: scroll !important; /* Cấm SweetAlert2 giấu thanh cuộn */
-            padding-right: 0 !important;
+        /* --- ÉP DUY NHẤT 1 THANH CUỘN VÀ CHỐNG GIẬT MÀN HÌNH --- */
+        body { 
+            padding-right: 0 !important; 
+            overflow-y: scroll !important; /* Luôn giữ 1 thanh cuộn gốc của trang */
         }
-        /* -------------------------------------------------------- */
+        .swal2-container { 
+            overflow-y: hidden !important; /* Xóa vĩnh viễn thanh cuộn thứ 2 của lớp sương mờ */
+        }
+        /* ------------------------------------------------------- */
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
         h2 { text-align: center; color: #333; margin-bottom: 30px; }
@@ -39,7 +41,6 @@
         tr:nth-child(odd) td.normal-cell { transition: background-color 0.2s; }
         tr.normal-row:hover td.normal-cell { background-color: #e9ecef !important; }
         
-        /* ĐÓNG BĂNG ĐỘ RỘNG NHÃN TRẠNG THÁI CHỐNG GIẬT NHẸ */
         .status-badge { padding: 5px 0; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; width: 85px; text-align: center; box-sizing: border-box;}
         .status-unpaid { background-color: #ffeeba; color: #856404; }
         .status-paid { background-color: #d4edda; color: #155724; }
@@ -59,7 +60,6 @@
         .nv-select { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; }
         .date-input-filter { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; width: 180px; box-sizing: border-box;}
         
-        /* ĐÓNG BĂNG ĐỘ RỘNG NÚT BẤM CHỐNG GIẬT NHẸ */
         .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 0; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100px; transition: 0.3s; margin-bottom: 3px; box-sizing: border-box; display: inline-block; text-align: center;}
         .mark-btn:hover { background-color: #218838; }
         .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 0; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100px; transition: 0.3s; margin-bottom: 3px; box-sizing: border-box; display: inline-block; text-align: center;}
@@ -168,8 +168,7 @@
                 confirmButtonColor: '#343a40',
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'Tiến hành Chốt Sổ',
-                cancelButtonText: 'Hủy bỏ',
-                scrollbarPadding: false 
+                cancelButtonText: 'Hủy bỏ'
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById('screenMenu').style.display = 'none';
@@ -182,7 +181,6 @@
                         title: 'Đang tạo File Lưu trữ', 
                         text: 'Vui lòng không tắt trang web lúc này...', 
                         allowOutsideClick: false, 
-                        scrollbarPadding: false,
                         didOpen: () => { 
                             Swal.showLoading(); 
                         } 
@@ -200,20 +198,19 @@
                                 title: 'Thành công!', 
                                 text: res.message, 
                                 icon: 'success', 
-                                confirmButtonText: 'Đã hiểu',
-                                scrollbarPadding: false
+                                confirmButtonText: 'Đã hiểu'
                             }).then(() => { 
                                 globalData = []; 
                                 loadedDataType = ""; 
                                 loadData('all'); 
                             });
                         } else {
-                            Swal.fire({title: 'Lỗi hệ thống!', text: res.message, icon: 'error', scrollbarPadding: false});
+                            Swal.fire({title: 'Lỗi hệ thống!', text: res.message, icon: 'error'});
                             showMenu();
                         }
                     })
                     .catch(e => { 
-                        Swal.fire({title: 'Lỗi kết nối!', text: 'Vui lòng kiểm tra lại mạng internet.', icon: 'error', scrollbarPadding: false}); 
+                        Swal.fire({title: 'Lỗi kết nối!', text: 'Vui lòng kiểm tra lại mạng internet.', icon: 'error'}); 
                         showMenu(); 
                     });
                 }
@@ -810,7 +807,6 @@
                 confirmButtonText: 'Lưu thay đổi', 
                 cancelButtonText: 'Hủy bỏ', 
                 confirmButtonColor: '#17a2b8',
-                scrollbarPadding: false, 
                 didOpen: () => {
                     const inputTien = document.getElementById('swal-tien');
                     inputTien.addEventListener('input', function(e) { 
@@ -838,7 +834,6 @@
                     Swal.fire({ 
                         title: 'Đang xử lý...', 
                         allowOutsideClick: false,
-                        scrollbarPadding: false, 
                         didOpen: () => { 
                             Swal.showLoading(); 
                         } 
@@ -857,11 +852,11 @@
                             renderTable(); 
                             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cập nhật thành công!', showConfirmButton: false, timer: 3000 });
                         } else { 
-                            Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
+                            Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error'}); 
                         }
                     })
                     .catch(err => { 
-                        Swal.fire({title: 'Lỗi kết nối!', text: 'Không thể kết nối đến máy chủ.', icon: 'error', scrollbarPadding: false}); 
+                        Swal.fire({title: 'Lỗi kết nối!', text: 'Không thể kết nối đến máy chủ.', icon: 'error'}); 
                     });
                 }
             });
@@ -887,8 +882,7 @@
                 inputPlaceholder: '--- Chọn cột dữ liệu ---',
                 showCancelButton: true, 
                 confirmButtonText: 'Tiếp tục', 
-                cancelButtonText: 'Hủy',
-                scrollbarPadding: false 
+                cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     let selectedColumn = result.value;
@@ -902,7 +896,6 @@
                         confirmButtonText: 'Lưu thay đổi', 
                         cancelButtonText: 'Quay lại', 
                         confirmButtonColor: '#007bff',
-                        scrollbarPadding: false,
                         didOpen: () => {
                             if (selectedColumn.toLowerCase().includes('tiền') || selectedColumn.toLowerCase().includes('mức thu')) {
                                 const inputEl = Swal.getInput();
@@ -921,7 +914,6 @@
                             Swal.fire({ 
                                 title: 'Đang lưu...', 
                                 allowOutsideClick: false, 
-                                scrollbarPadding: false,
                                 didOpen: () => { 
                                     Swal.showLoading(); 
                                 } 
@@ -939,11 +931,11 @@
                                     renderTable(); 
                                     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã lưu thay đổi!', showConfirmButton: false, timer: 2000 });
                                 } else { 
-                                    Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
+                                    Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error'}); 
                                 }
                             })
                             .catch(err => { 
-                                Swal.fire({title: 'Lỗi kết nối!', text: 'Không thể kết nối đến máy chủ.', icon: 'error', scrollbarPadding: false}); 
+                                Swal.fire({title: 'Lỗi kết nối!', text: 'Không thể kết nối đến máy chủ.', icon: 'error'}); 
                             });
                         }
                     });
@@ -963,8 +955,7 @@
                 showCancelButton: true, 
                 confirmButtonText: 'Lưu thay đổi', 
                 cancelButtonText: 'Hủy bỏ', 
-                confirmButtonColor: '#007bff',
-                scrollbarPadding: false 
+                confirmButtonColor: '#007bff'
             }).then((result) => {
                 if (result.isConfirmed) {
                     let newNote = result.value;
@@ -988,12 +979,12 @@
                             noteElement.innerText = newNote; 
                             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã lưu ghi chú!', showConfirmButton: false, timer: 2000 });
                         } else { 
-                            Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
+                            Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error'}); 
                             noteElement.innerText = oldText; 
                         }
                     })
                     .catch(err => { 
-                        Swal.fire({title: 'Lỗi!', text: 'Không kết nối được.', icon: 'error', scrollbarPadding: false}); 
+                        Swal.fire({title: 'Lỗi!', text: 'Không kết nối được.', icon: 'error'}); 
                         noteElement.innerText = oldText; 
                     });
                 }
@@ -1006,7 +997,7 @@
             if (isCollecting) {
                 let selectedNV = document.getElementById('nvSelect').value;
                 if (!selectedNV) {
-                    Swal.fire({title: 'Lưu ý', text: 'Vui lòng chọn tên Nhân viên ở menu phía trên trước khi thu tiền!', icon: 'warning', scrollbarPadding: false});
+                    Swal.fire({title: 'Lưu ý', text: 'Vui lòng chọn tên Nhân viên ở menu phía trên trước khi thu tiền!', icon: 'warning'});
                     return;
                 }
 
@@ -1019,7 +1010,6 @@
                     confirmButtonText: 'Xác nhận thu',
                     cancelButtonText: 'Hủy',
                     confirmButtonColor: '#28a745',
-                    scrollbarPadding: false, 
                     preConfirm: (inputDay) => {
                         if (!inputDay || inputDay.trim() === '') {
                             Swal.showValidationMessage('Bạn phải nhập ngày đóng tiền!');
@@ -1042,8 +1032,7 @@
                     confirmButtonColor: '#dc3545',
                     cancelButtonColor: '#6c757d',
                     confirmButtonText: 'Đồng ý hoàn tác',
-                    cancelButtonText: 'Hủy',
-                    scrollbarPadding: false 
+                    cancelButtonText: 'Hủy'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         executePaymentRequest(rowSheetName, rowIndex, btnElement, 'chưa đóng', false);
@@ -1096,13 +1085,13 @@
                     }
                     btnElement.disabled = false;
                 } else { 
-                    Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
+                    Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error'}); 
                     btnElement.innerText = originalText; 
                     btnElement.disabled = false; 
                 }
             })
             .catch(err => { 
-                Swal.fire({title: 'Lỗi!', text: 'Vui lòng kiểm tra mạng.', icon: 'error', scrollbarPadding: false}); 
+                Swal.fire({title: 'Lỗi!', text: 'Vui lòng kiểm tra mạng.', icon: 'error'}); 
                 btnElement.innerText = originalText; 
                 btnElement.disabled = false; 
             });
