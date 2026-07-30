@@ -1656,6 +1656,9 @@
                 return parseInt(dataByPeriod[a].month) - parseInt(dataByPeriod[b].month);
             });
 
+            let globalTotalCurrent = 0;
+            let globalTotalDebt = 0;
+
             periodKeys.forEach(pKey => {
                 let pData = dataByPeriod[pKey];
                 let titleText = pData.isCurrent ? `THÁNG ${pData.month} NĂM ${pData.year}` : `NỢ THÁNG ${pData.month} NĂM ${pData.year}`;
@@ -1746,6 +1749,12 @@
                     `;
                 });
 
+                if(pData.isCurrent) {
+                    globalTotalCurrent += grandTotal;
+                } else {
+                    globalTotalDebt += grandTotal;
+                }
+
                 excelHtml += `
                 <tr>
                     <td colspan="6" class="bold text-center">TỔNG ${titleText.replace('NỢ ', '')} ĐÃ ĐÓNG:</td>
@@ -1756,6 +1765,26 @@
                 <tr><td colspan="11" class="no-border"></td></tr>
                 `;
             });
+
+            // THÊM CHỐT TỔNG NỢ VÀ THU Ở DƯỚI CÙNG FILE EXCEL
+            excelHtml += `
+            <tr><td colspan="11" class="no-border"></td></tr>
+            <tr>
+                <td colspan="6" class="bold text-center" style="font-size: 14pt;">TỔNG THU TRONG THÁNG:</td>
+                <td class="bold text-right" style="font-size: 14pt;">${globalTotalCurrent.toLocaleString('vi-VN')}</td>
+                <td colspan="4" class="no-border"></td>
+            </tr>
+            <tr>
+                <td colspan="6" class="bold text-center" style="font-size: 14pt; color: red;">TỔNG NỢ:</td>
+                <td class="bold text-right" style="font-size: 14pt; color: red;">${globalTotalDebt.toLocaleString('vi-VN')}</td>
+                <td colspan="4" class="no-border"></td>
+            </tr>
+            <tr>
+                <td colspan="6" class="bold text-center" style="font-size: 16pt;">TỔNG CỘNG THU (THÁNG + NỢ):</td>
+                <td class="bold text-right" style="font-size: 16pt;">${(globalTotalCurrent + globalTotalDebt).toLocaleString('vi-VN')}</td>
+                <td colspan="4" class="no-border"></td>
+            </tr>
+            `;
 
             excelHtml += `</table></body></html>`;
 
