@@ -451,6 +451,7 @@
     </div>
 
     <script>
+        // Đường link API mới nhất đã được cập nhật
         const API_URL = 'https://script.google.com/macros/s/AKfycbwRCdKafe6zmkrKoQv2gSVJuqshaiB0LQ_MAZL1TEaw4Cc44IUy7lZ-uCZC6gluWAXw/exec';
         
         let store = { 
@@ -648,7 +649,7 @@
             document.getElementById('tableFoot').innerHTML = '';
             document.getElementById('tableHead').innerHTML = '';
             
-            // Ẩn bộ lọc và xóa nội dung đã nhập trước đó để tránh dính dữ liệu chéo
+            // --- SỬA LỖI: Bắt buộc ẩn bộ lọc ở Menu Chọn File Chốt ---
             document.getElementById('nvSelect').style.display = 'none';
             document.getElementById('dateInput').style.display = 'none';
             document.getElementById('nvSelect').value = '';
@@ -677,7 +678,7 @@
             
             document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName.replace('Chốt-', '');
             
-            // Bật bộ lọc lên và gán chữ -- Tất cả nhân viên -- vào mục đầu tiên
+            // --- SỬA LỖI: Bắt buộc hiện bộ lọc ở bên trong File Chốt ---
             let nvSelect = document.getElementById('nvSelect');
             let dateInput = document.getElementById('dateInput');
             nvSelect.style.display = 'inline-block';
@@ -685,7 +686,7 @@
             nvSelect.options[0].text = "-- Tất cả nhân viên --";
             nvSelect.value = '';
             dateInput.value = '';
-            
+
             renderTable();
         }
         
@@ -696,8 +697,6 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('nvSelect').style.display = 'none';
             document.getElementById('dateInput').style.display = 'none';
-            document.getElementById('nvSelect').value = '';
-            document.getElementById('dateInput').value = '';
             
             globalData = store.current;
             currentSheetName = store.currentSheetName; 
@@ -780,7 +779,7 @@
                 filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
             }
 
-            // --- BỔ SUNG LOGIC LỌC TÌM KIẾM NHÂN VIÊN VÀ NGÀY CHO FILE CHỐT ---
+            // --- SỬA LỖI: Bổ sung logic lọc Nhân Viên / Ngày cho chế độ xem File Chốt ---
             if (currentViewMode === 'paid' || currentViewMode === 'closed_data') {
                 if (selectedNV !== "" || selectedDate !== "") {
                     filteredData = filteredData.filter(row => {
