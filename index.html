@@ -47,6 +47,21 @@
         }
         .toast-success { background-color: #28a745; border-left: 6px solid #1e7e34; }
         .toast-info { background-color: #17a2b8; border-left: 6px solid #117a8b; }
+        
+        /* --- MÀN HÌNH LOAD CHÍNH (PRE-FETCHING) --- */
+        #startup-loading {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 9999999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        #startup-loading img { width: 150px; height: 150px; margin-bottom: 20px; }
+        #loading-text { font-size: 18px; font-weight: bold; color: #333; text-align: center;}
         /* ------------------------------------------------------- */
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
@@ -112,16 +127,20 @@
         
         tfoot { background-color: #e9ecef; }
         .total-row td { color: #007bff; font-size: 18px; font-weight: bold; background-color: #e9ecef; text-align: right; }
-
-        #loading { text-align: center; font-style: italic; color: #666; margin: 20px 0; font-size: 18px; display: none;}
     </style>
 </head>
 <body>
 
+    <!-- MÀN HÌNH TẢI DỮ LIỆU BAN ĐẦU -->
+    <div id="startup-loading">
+        <img src="./Loading_PacMan.svg" alt="Loading...">
+        <div id="loading-text">Đang đồng bộ dữ liệu hệ thống, vui lòng chờ...</div>
+    </div>
+
     <!-- Container chứa các thông báo độc lập -->
     <div id="custom-toast-container"></div>
 
-    <div id="screenMenu">
+    <div id="screenMenu" style="display: none;">
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
         <div class="menu-container">
             <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng</button>
@@ -147,20 +166,18 @@
                     <option value="L">Quách Hoàng Lộc</option>
                 </select>
 
-                <input type="text" id="dateInput" class="date-input-filter" style="display:none;" placeholder="Chọn ngày đóng..." onkeyup="renderTable()">
+                <input type="text" id="dateInput" class="date-input-filter" autocomplete="off" style="display:none;" placeholder="Chọn ngày đóng..." onkeyup="renderTable()">
             </div>
 
             <!-- Khung tìm kiếm nằm bên phải -->
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Tìm tên, lô, ngành hàng..." onkeyup="renderTable()">
+                <input type="text" id="searchInput" autocomplete="off" placeholder="🔍 Tìm tên, lô, ngành hàng..." onkeyup="renderTable()">
             </div>
         </div>
         
         <h2 id="tableTitle">Danh Sách</h2>
-        
-        <div id="loading">Đang tải dữ liệu, vui lòng đợi...</div>
 
-        <div class="table-container" id="tableDiv" style="display: none;">
+        <div class="table-container" id="tableDiv">
             <table id="dataTable">
                 <thead>
                     <tr id="tableHead"></tr>
@@ -172,13 +189,65 @@
     </div>
 
     <script>
-        // === DÁN URL WEB APP CỦA BẠN VÀO ĐÂY ===
+        // === URL WEB APP ĐÃ ĐƯỢC CẬP NHẬT ===
         const API_URL = 'https://script.google.com/macros/s/AKfycbymU7KbYldtnLd6sMUmBXkEenXOT5HAYCCE5FUTKX22NoPGDgDA8wLGMrXY7nEEOYUu/exec';
         
+        // BỘ NHỚ LƯU TRỮ TẠM THỜI (IN-MEMORY CACHE)
+        let store = {
+            ds: [],
+            current: [],
+            closedList: [],
+            closedData: {} // { fileId: { sheetName: "...", data: [...] } }
+        };
+
         let globalData = []; 
         let currentSheetName = ""; 
         let currentViewMode = 'all'; 
-        let loadedDataType = ""; 
+
+        // GIAI ĐOẠN 2: TẢI NGẦM ĐỒNG LOẠT LÚC MỚI VÀO TRANG
+        window.onload = async function() {
+            try {
+                let pDs = fetch(API_URL + "?type=ds").then(r => r.json());
+                let pCurrent = fetch(API_URL + "?type=current").then(r => r.json());
+                let pClosedList = fetch(API_URL + "?type=closed_list").then(r => r.json());
+
+                // Chờ cả 3 luồng tải xong cùng lúc
+                let [resDs, resCurrent, resClosedList] = await Promise.all([pDs, pCurrent, pClosedList]);
+
+                if(resDs.success) store.ds = resDs.data;
+                if(resCurrent.success) {
+                    store.current = resCurrent.data;
+                    currentSheetName = resCurrent.sheetName; 
+                }
+                
+                // Xử lý tải toàn bộ các sổ đã chốt
+                if(resClosedList.success) {
+                    store.closedList = resClosedList.data;
+                    let closedPromises = store.closedList.map(item => 
+                        fetch(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name)
+                        .then(r => r.json())
+                        .then(res => {
+                            if(res.success) {
+                                store.closedData[item.id] = { sheetName: res.sheetName, data: res.data };
+                            }
+                        })
+                    );
+                    await Promise.all(closedPromises); // Chờ tải xong hết tất cả file chốt
+                }
+                
+                // GIAI ĐOẠN 4: ẨN MÀN HÌNH LOAD VÀ HIỆN MENU
+                let loader = document.getElementById('startup-loading');
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    document.getElementById('screenMenu').style.display = 'block';
+                }, 500);
+
+            } catch (error) {
+                document.getElementById('loading-text').innerText = "Lỗi kết nối mạng! Vui lòng tải lại trang.";
+                document.getElementById('loading-text').style.color = "red";
+            }
+        };
 
         // Hàm gọi Thông Báo Độc Lập
         function showCustomToast(message, type = 'success') {
@@ -224,12 +293,6 @@
                 scrollbarPadding: false 
             }).then((result) => {
                 if (result.isConfirmed) {
-                    document.getElementById('screenMenu').style.display = 'none';
-                    document.getElementById('screenTable').style.display = 'block';
-                    document.getElementById('tableDiv').style.display = 'none';
-                    document.getElementById('loading').style.display = 'block';
-                    document.getElementById('tableTitle').innerText = "Đang xử lý...";
-
                     Swal.fire({ 
                         title: 'Đang tạo File Lưu trữ', 
                         text: 'Vui lòng không tắt trang web lúc này...', 
@@ -250,23 +313,19 @@
                         if(res.success) {
                             Swal.fire({ 
                                 title: 'Thành công!', 
-                                text: res.message, 
+                                text: 'Chốt sổ hoàn tất. Hệ thống sẽ tải lại dữ liệu mới.', 
                                 icon: 'success', 
-                                confirmButtonText: 'Đã hiểu',
+                                confirmButtonText: 'OK',
                                 scrollbarPadding: false
                             }).then(() => { 
-                                globalData = []; 
-                                loadedDataType = ""; 
-                                loadData('all'); 
+                                window.location.reload(); // Tải lại toàn bộ trang để nạp cấu trúc mới vào RAM
                             });
                         } else {
-                            Swal.fire({title: 'Lỗi hệ thống!', text: res.message, icon: 'error'});
-                            showMenu();
+                            Swal.fire({title: 'Lỗi hệ thống!', text: res.message, icon: 'error', scrollbarPadding: false});
                         }
                     })
                     .catch(e => { 
-                        Swal.fire({title: 'Lỗi kết nối!', text: 'Vui lòng kiểm tra lại mạng internet.', icon: 'error'}); 
-                        showMenu(); 
+                        Swal.fire({title: 'Lỗi kết nối!', text: 'Vui lòng kiểm tra lại mạng internet.', icon: 'error', scrollbarPadding: false}); 
                     });
                 }
             });
@@ -276,86 +335,45 @@
             currentViewMode = 'closed_list';
             document.getElementById('screenMenu').style.display = 'none';
             document.getElementById('screenTable').style.display = 'block';
-            document.getElementById('tableDiv').style.display = 'block';
-            document.getElementById('loading').style.display = 'block';
             document.getElementById('tableTitle').innerText = "Danh Sách Đã Chốt";
-            document.getElementById('tableBody').innerHTML = '';
             document.getElementById('tableFoot').innerHTML = '';
             document.getElementById('tableHead').innerHTML = '';
 
-            fetch(API_URL + "?type=closed_list")
-            .then(r => r.json())
-            .then(res => {
-                document.getElementById('loading').style.display = 'none';
-                if(res.success) {
-                    let list = res.data;
-                    if(list.length === 0) {
-                        document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">Chưa có kỳ nào được chốt trong hệ thống.</td></tr>';
-                    } else {
-                        let html = '<tr><td colspan="10" style="text-align:center; padding: 20px;"><h3>Vui lòng chọn kỳ đã chốt để xem:</h3>';
-                        list.forEach(item => {
-                             html += `<button class="mark-btn" style="margin: 10px; background: #17a2b8; padding: 12px 25px; width: auto;" onclick="loadClosedData('${item.id}', '${item.name}')">📁 ${item.name.replace('Chốt-', '')}</button>`;
-                        });
-                        html += '</td></tr>';
-                        document.getElementById('tableBody').innerHTML = html;
-                    }
-                }
-            });
+            let list = store.closedList;
+            if(list.length === 0) {
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">Chưa có kỳ nào được chốt trong hệ thống.</td></tr>';
+            } else {
+                let html = '<tr><td colspan="10" style="text-align:center; padding: 20px;"><h3>Vui lòng chọn kỳ đã chốt để xem:</h3>';
+                list.forEach(item => {
+                     html += `<button class="mark-btn" style="margin: 10px; background: #17a2b8; padding: 12px 25px; width: auto;" onclick="loadClosedData('${item.id}')">📁 ${item.name.replace('Chốt-', '')}</button>`;
+                });
+                html += '</td></tr>';
+                document.getElementById('tableBody').innerHTML = html;
+            }
         }
 
-        function loadClosedData(fileId, fileName) {
+        function loadClosedData(fileId) {
             currentViewMode = 'closed_data';
-            document.getElementById('tableDiv').style.display = 'none';
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('tableTitle').innerText = "Đang tải " + fileName.replace('Chốt-', '') + "...";
-
-            fetch(API_URL + "?type=closed_data&fileId=" + fileId + "&fileName=" + fileName)
-            .then(r => r.json())
-            .then(res => {
-                if(res.success) {
-                    globalData = res.data;
-                    currentSheetName = res.sheetName;
-                    document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName.replace('Chốt-', '');
-                    renderTable();
-                }
-            });
+            // Lấy từ RAM
+            globalData = store.closedData[fileId].data;
+            currentSheetName = store.closedData[fileId].sheetName;
+            document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName.replace('Chốt-', '');
+            renderTable();
         }
         
         function loadRepSearch() {
             currentViewMode = 'rep_search';
-            let targetType = 'current'; 
-            
             document.getElementById('screenMenu').style.display = 'none';
             document.getElementById('screenTable').style.display = 'block';
-            document.getElementById('tableDiv').style.display = 'none';
-            document.getElementById('loading').style.display = 'block';
             document.getElementById('searchInput').value = '';
             
             document.getElementById('nvSelect').style.display = 'none';
             document.getElementById('dateInput').style.display = 'none';
             
-            if(globalData.length > 0 && loadedDataType === targetType) {
-                updateTableTitle();
-                renderTable();
-            } else {
-                document.getElementById('tableTitle').innerText = "Đang tải dữ liệu...";
-                fetch(API_URL + "?type=" + targetType)
-                .then(response => response.json())
-                .then(res => {
-                    if(res.success) {
-                        globalData = res.data;
-                        currentSheetName = res.sheetName; 
-                        loadedDataType = targetType; 
-                        updateTableTitle(); 
-                        renderTable();
-                    } else {
-                        document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
-                    }
-                })
-                .catch(error => { 
-                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!'; 
-                });
-            }
+            // Lấy từ RAM
+            globalData = store.current;
+            updateTableTitle();
+            renderTable();
         }
 
         function updateTableTitle() {
@@ -376,12 +394,8 @@
 
         function loadData(viewMode) {
             currentViewMode = viewMode;
-            let targetType = (viewMode === 'ds') ? 'ds' : 'current'; 
-
             document.getElementById('screenMenu').style.display = 'none';
             document.getElementById('screenTable').style.display = 'block';
-            document.getElementById('tableDiv').style.display = 'none';
-            document.getElementById('loading').style.display = 'block';
             document.getElementById('searchInput').value = '';
 
             let nvSelect = document.getElementById('nvSelect');
@@ -403,34 +417,18 @@
                 dateInput.value = '';
             }
 
-            if(globalData.length > 0 && loadedDataType === targetType) {
-                updateTableTitle();
-                renderTable();
+            // Lấy từ RAM tức thì
+            if (viewMode === 'ds') {
+                globalData = store.ds;
             } else {
-                document.getElementById('tableTitle').innerText = "Đang tải dữ liệu...";
-                fetch(API_URL + "?type=" + targetType)
-                .then(response => response.json())
-                .then(res => {
-                    if(res.success) {
-                        globalData = res.data;
-                        currentSheetName = res.sheetName; 
-                        loadedDataType = targetType; 
-                        updateTableTitle(); 
-                        renderTable();
-                    } else {
-                        document.getElementById('loading').innerText = 'Lỗi từ dữ liệu: ' + res.message;
-                    }
-                })
-                .catch(error => { 
-                    document.getElementById('loading').innerText = 'Lỗi kết nối dữ liệu!'; 
-                });
+                globalData = store.current;
             }
+            
+            updateTableTitle();
+            renderTable();
         }
 
         function renderTable() {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('tableDiv').style.display = 'block';
-            
             let filteredData = globalData;
             let searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
             
@@ -853,9 +851,9 @@
                 html: `
                     <div style="text-align: left; padding: 0 5px;">
                         <label style="font-weight: bold; color: #333; display: block; margin-bottom: 5px;">Số tiền mới (VNĐ):</label>
-                        <input id="swal-tien" type="text" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0 0 15px 0; box-sizing: border-box;" placeholder="Nhập 0 nếu miễn hoàn toàn" value="${currentTien}">
+                        <input id="swal-tien" type="text" autocomplete="off" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0 0 15px 0; box-sizing: border-box;" placeholder="Nhập 0 nếu miễn hoàn toàn" value="${currentTien}">
                         <label style="font-weight: bold; color: #dc3545; display: block; margin-bottom: 5px;">Lý do (Bắt buộc phải nhập):</label>
-                        <input id="swal-lydo" type="text" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box;" placeholder="VD: Bệnh, nghỉ bán..." value="${currentNote}">
+                        <input id="swal-lydo" type="text" autocomplete="off" class="swal2-input" style="width: 100%; max-width: 100%; margin: 0; box-sizing: border-box;" placeholder="VD: Bệnh, nghỉ bán..." value="${currentNote}">
                     </div>
                 `,
                 showCancelButton: true, 
@@ -906,8 +904,8 @@
                         if (res.success) {
                             rowData['Thành tiền'] = newTien; 
                             rowData['Ghi chú'] = newNote; 
-                            renderTable(); 
-                            Swal.close();
+                            renderTable();
+                            Swal.close(); 
                             showCustomToast('Cập nhật thành công!', 'success');
                         } else { 
                             Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
@@ -950,6 +948,7 @@
                     Swal.fire({
                         title: `Chỉnh sửa: ${selectedColumn}`, 
                         input: 'text', 
+                        inputAttributes: { autocomplete: 'off' },
                         inputValue: currentValue,
                         showCancelButton: true, 
                         confirmButtonText: 'Lưu thay đổi', 
@@ -989,8 +988,8 @@
                             .then(res => {
                                 if(res.success) {
                                     rowData[selectedColumn] = newValue; 
-                                    renderTable(); 
-                                    Swal.close();
+                                    renderTable();
+                                    Swal.close(); 
                                     showCustomToast('Đã lưu thay đổi!', 'success');
                                 } else { 
                                     Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
@@ -1012,6 +1011,7 @@
             Swal.fire({
                 title: 'Chỉnh sửa Ghi chú', 
                 input: 'text', 
+                inputAttributes: { autocomplete: 'off' },
                 inputLabel: `Nhập nội dung ghi chú mới:`, 
                 inputValue: currentNote,
                 showCancelButton: true, 
@@ -1039,7 +1039,8 @@
                     .then(res => {
                         if(res.success) {
                             rowData['Ghi chú'] = newNote; 
-                            noteElement.innerText = newNote; 
+                            noteElement.innerText = newNote;
+                            Swal.close(); 
                             showCustomToast('Đã lưu ghi chú!', 'success');
                         } else { 
                             Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
@@ -1067,6 +1068,7 @@
                 Swal.fire({
                     title: 'Nhập ngày thu tiền',
                     input: 'text',
+                    inputAttributes: { autocomplete: 'off' },
                     inputLabel: `Sẽ được gắn với mã nhân viên: ${selectedNV}`,
                     inputPlaceholder: 'Ví dụ: 29s',
                     showCancelButton: true,
@@ -1119,36 +1121,20 @@
             .then(r => r.json())
             .then(res => {
                 if(res.success) {
+                    // Cập nhật thẳng vào RAM
                     let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
                     if(rowData) {
                         rowData['Trạng thái'] = finalStatus;
                     }
                     
-                    let tr = btnElement.closest('tr');
-                    let badge = tr.querySelector('.status-badge');
-                    
-                    if (badge) { 
-                        badge.innerText = finalStatus; 
-                        badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid'; 
-                    }
+                    // Vẽ lại toàn bộ bảng trong nháy mắt
+                    renderTable();
                     
                     if (isCollecting) {
-                        btnElement.innerText = "Hoàn tác"; 
-                        btnElement.className = "undo-btn";
-                        btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
-                        
-                        if(!tr.style.backgroundColor) {
-                            tr.classList.add('row-success'); 
-                        }
                         showCustomToast('Đã thu tiền!', 'success');
                     } else {
-                        btnElement.innerText = "Đóng tiền"; 
-                        btnElement.className = "mark-btn";
-                        btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'PAY')`);
-                        tr.classList.remove('row-success'); 
                         showCustomToast('Đã hoàn tác!', 'info');
                     }
-                    btnElement.disabled = false;
                 } else { 
                     Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
                     btnElement.innerText = originalText; 
