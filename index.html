@@ -6,6 +6,14 @@
     <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* --- ĐỔ BÊ TÔNG THANH CUỘN CHỐNG GIẬT MÀN HÌNH HỆ THỐNG --- */
+        html { overflow-y: scroll; } /* Luôn chừa sẵn không gian cho thanh cuộn */
+        body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) {
+            overflow-y: scroll !important; /* Cấm SweetAlert2 giấu thanh cuộn */
+            padding-right: 0 !important;
+        }
+        /* -------------------------------------------------------- */
+
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
         h2 { text-align: center; color: #333; margin-bottom: 30px; }
         
@@ -31,7 +39,7 @@
         tr:nth-child(odd) td.normal-cell { transition: background-color 0.2s; }
         tr.normal-row:hover td.normal-cell { background-color: #e9ecef !important; }
         
-        /* ĐÓNG BĂNG ĐỘ RỘNG NHÃN TRẠNG THÁI CHỐNG GIẬT */
+        /* ĐÓNG BĂNG ĐỘ RỘNG NHÃN TRẠNG THÁI CHỐNG GIẬT NHẸ */
         .status-badge { padding: 5px 0; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; width: 85px; text-align: center; box-sizing: border-box;}
         .status-unpaid { background-color: #ffeeba; color: #856404; }
         .status-paid { background-color: #d4edda; color: #155724; }
@@ -51,7 +59,7 @@
         .nv-select { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; }
         .date-input-filter { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; width: 180px; box-sizing: border-box;}
         
-        /* ĐÓNG BĂNG ĐỘ RỘNG NÚT BẤM CHỐNG GIẬT */
+        /* ĐÓNG BĂNG ĐỘ RỘNG NÚT BẤM CHỐNG GIẬT NHẸ */
         .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 0; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100px; transition: 0.3s; margin-bottom: 3px; box-sizing: border-box; display: inline-block; text-align: center;}
         .mark-btn:hover { background-color: #218838; }
         .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 0; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100px; transition: 0.3s; margin-bottom: 3px; box-sizing: border-box; display: inline-block; text-align: center;}
@@ -98,9 +106,10 @@
                 <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
                 
                 <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
-                    <option value="">-- Chọn nhân viên Thu --</option>
-                    <option value="A">Trần Thanh Tú</option>
-                    <option value="B">Quách Hoàng Lộc</option>
+                    <option value="">-- Chọn nhân viên --</option>
+                    <option value="A">Nhân viên A</option>
+                    <option value="B">Nhân viên B</option>
+                    <option value="C">Nhân viên C</option>
                 </select>
 
                 <input type="text" id="dateInput" class="date-input-filter" style="display:none;" placeholder="Chọn ngày đóng..." onkeyup="renderTable()">
@@ -160,7 +169,7 @@
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'Tiến hành Chốt Sổ',
                 cancelButtonText: 'Hủy bỏ',
-                scrollbarPadding: false // Chống giật
+                scrollbarPadding: false 
             }).then((result) => {
                 if (result.isConfirmed) {
                     document.getElementById('screenMenu').style.display = 'none';
@@ -801,7 +810,7 @@
                 confirmButtonText: 'Lưu thay đổi', 
                 cancelButtonText: 'Hủy bỏ', 
                 confirmButtonColor: '#17a2b8',
-                scrollbarPadding: false, /* Chống giật */
+                scrollbarPadding: false, 
                 didOpen: () => {
                     const inputTien = document.getElementById('swal-tien');
                     inputTien.addEventListener('input', function(e) { 
@@ -879,7 +888,7 @@
                 showCancelButton: true, 
                 confirmButtonText: 'Tiếp tục', 
                 cancelButtonText: 'Hủy',
-                scrollbarPadding: false /* Chống giật */
+                scrollbarPadding: false 
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     let selectedColumn = result.value;
@@ -955,7 +964,7 @@
                 confirmButtonText: 'Lưu thay đổi', 
                 cancelButtonText: 'Hủy bỏ', 
                 confirmButtonColor: '#007bff',
-                scrollbarPadding: false /* Chống giật */
+                scrollbarPadding: false 
             }).then((result) => {
                 if (result.isConfirmed) {
                     let newNote = result.value;
@@ -1010,7 +1019,7 @@
                     confirmButtonText: 'Xác nhận thu',
                     cancelButtonText: 'Hủy',
                     confirmButtonColor: '#28a745',
-                    scrollbarPadding: false, /* Chống giật */
+                    scrollbarPadding: false, 
                     preConfirm: (inputDay) => {
                         if (!inputDay || inputDay.trim() === '') {
                             Swal.showValidationMessage('Bạn phải nhập ngày đóng tiền!');
@@ -1034,7 +1043,7 @@
                     cancelButtonColor: '#6c757d',
                     confirmButtonText: 'Đồng ý hoàn tác',
                     cancelButtonText: 'Hủy',
-                    scrollbarPadding: false /* Chống giật */
+                    scrollbarPadding: false 
                 }).then((result) => {
                     if (result.isConfirmed) {
                         executePaymentRequest(rowSheetName, rowIndex, btnElement, 'chưa đóng', false);
