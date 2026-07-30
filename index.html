@@ -11,6 +11,7 @@
             padding-right: 0 !important; 
             overflow-y: scroll !important; 
         }
+        
         .swal2-container { 
             overflow-y: hidden !important; 
         }
@@ -26,6 +27,7 @@
             gap: 10px;
             pointer-events: none; 
         }
+        
         .custom-toast {
             min-width: 200px;
             background-color: #333;
@@ -41,14 +43,29 @@
             display: flex;
             align-items: center;
         }
-        .custom-toast.show { opacity: 1; transform: translateX(0); }
-        .toast-success { background-color: #28a745; border-left: 6px solid #1e7e34; }
-        .toast-info { background-color: #17a2b8; border-left: 6px solid #117a8b; }
+        
+        .custom-toast.show { 
+            opacity: 1; 
+            transform: translateX(0); 
+        }
+        
+        .toast-success { 
+            background-color: #28a745; 
+            border-left: 6px solid #1e7e34; 
+        }
+        
+        .toast-info { 
+            background-color: #17a2b8; 
+            border-left: 6px solid #117a8b; 
+        }
         
         /* --- MÀN HÌNH LOAD CHÍNH --- */
         #startup-loading {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
             background-color: rgba(255, 255, 255, 0.95);
             z-index: 9999999;
             display: flex;
@@ -57,15 +74,61 @@
             align-items: center;
             transition: opacity 0.5s ease;
         }
-        #startup-loading img { width: 150px; height: 150px; margin-bottom: 20px; }
-        #loading-text { font-size: 18px; font-weight: bold; color: #333; text-align: center;}
         
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8f9fa; margin: 0; }
-        h2 { text-align: center; color: #333; margin-bottom: 30px; }
+        #startup-loading img { 
+            width: 150px; 
+            height: 150px; 
+            margin-bottom: 20px; 
+        }
         
-        .menu-container { max-width: 600px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .menu-btn { padding: 25px 15px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; color: white; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .menu-btn:hover { transform: translateY(-3px); }
+        #loading-text { 
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #333; 
+            text-align: center;
+        }
+        
+        /* --- GIAO DIỆN CHÍNH --- */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            padding: 20px; 
+            background-color: #f8f9fa; 
+            margin: 0; 
+        }
+        
+        h2 { 
+            text-align: center; 
+            color: #333; 
+            margin-bottom: 30px; 
+        }
+        
+        .menu-container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+        }
+        
+        .menu-btn { 
+            padding: 25px 15px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            color: white; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        
+        .menu-btn:hover { 
+            transform: translateY(-3px); 
+        }
         
         .btn-ds { background-color: #6c757d; grid-column: span 2; } 
         .btn-all { background-color: #007bff; }
@@ -76,53 +139,260 @@
         .btn-chotso { background-color: #343a40; grid-column: span 2; padding: 15px; margin-top: 15px; font-size: 16px;}
         .btn-rep { background-color: #6f42c1; grid-column: span 2; padding: 15px; margin-top: 5px; font-size: 16px; }
 
-        .table-container { overflow-x: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
-        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; font-size: 14px; }
-        th { background-color: #343a40; color: white; position: sticky; top: 0; z-index: 10; }
+        .table-container { 
+            overflow-x: auto; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            margin-top: 20px; 
+        }
         
-        tr:nth-child(even) td.normal-cell { background-color: #f2f2f2; transition: background-color 0.2s; }
-        tr:nth-child(odd) td.normal-cell { transition: background-color 0.2s; }
-        tr.normal-row:hover td.normal-cell { background-color: #e9ecef !important; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 1000px; 
+        }
         
-        .status-badge { padding: 5px 0; border-radius: 20px; font-weight: bold; font-size: 12px; display: inline-block; width: 85px; text-align: center; box-sizing: border-box;}
-        .status-unpaid { background-color: #ffeeba; color: #856404; }
-        .status-paid { background-color: #d4edda; color: #155724; }
+        th, td { 
+            border: 1px solid #dee2e6; 
+            padding: 10px; 
+            text-align: left; 
+            font-size: 14px; 
+        }
         
-        .note-container { display: flex; justify-content: space-between; align-items: center; min-width: 100px; }
-        .edit-icon { cursor: pointer; margin-left: 8px; font-size: 14px; opacity: 0.5; transition: 0.2s; color: #007bff; }
-        .edit-icon:hover { opacity: 1; transform: scale(1.3); }
-        .note-text { flex-grow: 1; }
+        th { 
+            background-color: #343a40; 
+            color: white; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+        }
         
-        .top-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .left-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center;}
+        tr:nth-child(even) td.normal-cell { 
+            background-color: #f2f2f2; 
+            transition: background-color 0.2s; 
+        }
         
-        .back-btn { background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .search-box { flex-grow: 1; max-width: 400px; }
-        .search-box input { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 5px; font-size: 15px; box-sizing: border-box; }
+        tr:nth-child(odd) td.normal-cell { 
+            transition: background-color 0.2s; 
+        }
         
-        .nv-select { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; cursor: pointer; }
-        .date-input-filter { padding: 10px; border-radius: 5px; border: 1px solid #333; font-size: 15px; font-weight: bold; color: #333; width: 180px; box-sizing: border-box;}
+        tr.normal-row:hover td.normal-cell { 
+            background-color: #e9ecef !important; 
+        }
         
-        .mark-btn { background-color: #28a745; color: white; border: none; padding: 6px 0; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100px; transition: 0.3s; margin-bottom: 3px; box-sizing: border-box; display: inline-block; text-align: center;}
-        .mark-btn:hover { background-color: #218838; }
-        .undo-btn { background-color: #dc3545; color: white; border: none; padding: 6px 0; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100px; transition: 0.3s; margin-bottom: 3px; box-sizing: border-box; display: inline-block; text-align: center;}
-        .undo-btn:hover { background-color: #c82333; }
-        .col-action { width: 110px; text-align: center; }
+        .status-badge { 
+            padding: 5px 0; 
+            border-radius: 20px; 
+            font-weight: bold; 
+            font-size: 12px; 
+            display: inline-block; 
+            width: 85px; 
+            text-align: center; 
+            box-sizing: border-box;
+        }
         
-        .row-success td { background-color: #e8f5e9 !important; transition: background-color 0.5s ease; }
-        .row-debt td.normal-cell { background-color: #fff3cd !important; transition: background-color 0.2s; } 
-        .row-debt:hover td.normal-cell { background-color: #ffe69c !important; } 
+        .status-unpaid { 
+            background-color: #ffeeba; 
+            color: #856404; 
+        }
         
-        .section-divider td { background-color: #ffffff !important; padding: 15px 10px; text-align: center; font-size: 18px; font-weight: bold; border: none !important; }
-        .title-current { color: #333; }
-        .title-debt { color: #d32f2f; }
-        .subtotal-row td { font-weight: bold; border-top: 2px solid #555; background-color: #ffffff !important; border-bottom: none !important; border-left: none !important; border-right: none !important; }
-        .subtotal-debt td { color: #d32f2f; }
-        .subtotal-current td { color: #333; }
+        .status-paid { 
+            background-color: #d4edda; 
+            color: #155724; 
+        }
         
-        tfoot { background-color: #e9ecef; }
-        .total-row td { color: #007bff; font-size: 18px; font-weight: bold; background-color: #e9ecef; text-align: right; }
+        .note-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            min-width: 100px; 
+        }
+        
+        .edit-icon { 
+            cursor: pointer; 
+            margin-left: 8px; 
+            font-size: 14px; 
+            opacity: 0.5; 
+            transition: 0.2s; 
+            color: #007bff; 
+        }
+        
+        .edit-icon:hover { 
+            opacity: 1; 
+            transform: scale(1.3); 
+        }
+        
+        .note-text { 
+            flex-grow: 1; 
+        }
+        
+        .top-controls { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 10px; 
+            margin-bottom: 15px; 
+        }
+        
+        .left-controls { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            align-items: center;
+        }
+        
+        .back-btn { 
+            background-color: #6c757d; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+        
+        .search-box { 
+            flex-grow: 1; 
+            max-width: 400px; 
+        }
+        
+        .search-box input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ced4da; 
+            border-radius: 5px; 
+            font-size: 15px; 
+            box-sizing: border-box; 
+        }
+        
+        .nv-select { 
+            padding: 10px; 
+            border-radius: 5px; 
+            border: 1px solid #333; 
+            font-size: 15px; 
+            font-weight: bold; 
+            color: #333; 
+            cursor: pointer; 
+        }
+        
+        .date-input-filter { 
+            padding: 10px; 
+            border-radius: 5px; 
+            border: 1px solid #333; 
+            font-size: 15px; 
+            font-weight: bold; 
+            color: #333; 
+            width: 180px; 
+            box-sizing: border-box;
+        }
+        
+        .mark-btn { 
+            background-color: #28a745; 
+            color: white; 
+            border: none; 
+            padding: 6px 0; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 100px; 
+            transition: 0.3s; 
+            margin-bottom: 3px; 
+            box-sizing: border-box; 
+            display: inline-block; 
+            text-align: center;
+        }
+        
+        .mark-btn:hover { 
+            background-color: #218838; 
+        }
+        
+        .undo-btn { 
+            background-color: #dc3545; 
+            color: white; 
+            border: none; 
+            padding: 6px 0; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 100px; 
+            transition: 0.3s; 
+            margin-bottom: 3px; 
+            box-sizing: border-box; 
+            display: inline-block; 
+            text-align: center;
+        }
+        
+        .undo-btn:hover { 
+            background-color: #c82333; 
+        }
+        
+        .col-action { 
+            width: 110px; 
+            text-align: center; 
+        }
+        
+        .row-success td { 
+            background-color: #e8f5e9 !important; 
+            transition: background-color 0.5s ease; 
+        }
+        
+        .row-debt td.normal-cell { 
+            background-color: #fff3cd !important; 
+            transition: background-color 0.2s; 
+        } 
+        
+        .row-debt:hover td.normal-cell { 
+            background-color: #ffe69c !important; 
+        } 
+        
+        .section-divider td { 
+            background-color: #ffffff !important; 
+            padding: 15px 10px; 
+            text-align: center; 
+            font-size: 18px; 
+            font-weight: bold; 
+            border: none !important; 
+        }
+        
+        .title-current { 
+            color: #333; 
+        }
+        
+        .title-debt { 
+            color: #d32f2f; 
+        }
+        
+        .subtotal-row td { 
+            font-weight: bold; 
+            border-top: 2px solid #555; 
+            background-color: #ffffff !important; 
+            border-bottom: none !important; 
+            border-left: none !important; 
+            border-right: none !important; 
+        }
+        
+        .subtotal-debt td { 
+            color: #d32f2f; 
+        }
+        
+        .subtotal-current td { 
+            color: #333; 
+        }
+        
+        tfoot { 
+            background-color: #e9ecef; 
+        }
+        
+        .total-row td { 
+            color: #007bff; 
+            font-size: 18px; 
+            font-weight: bold; 
+            background-color: #e9ecef; 
+            text-align: right; 
+        }
     </style>
 </head>
 <body>
@@ -183,30 +453,38 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwRCdKafe6zmkrKoQv2gSVJuqshaiB0LQ_MAZL1TEaw4Cc44IUy7lZ-uCZC6gluWAXw/exec';
         
-        let store = { ds: [], current: [], closedList: [], closedData: {} };
+        let store = { 
+            ds: [], 
+            current: [], 
+            closedList: [], 
+            closedData: {} 
+        };
+        
         let globalData = []; 
         let currentSheetName = ""; 
         let currentViewMode = 'all'; 
 
-        // --- CỬA KHÓA MÃ PIN (MỨC 2) ---
+        // --- CỬA KHÓA MÃ PIN ĐÃ ĐƯỢC CHỐNG GỢI Ý MẬT KHẨU ---
         function requireSecurityPIN() {
             Swal.fire({
                 title: '🔒 Xác Nhận Truy Cập',
-                input: 'password',
+                // Đổi thành 'text' để lừa trình duyệt không hiện gợi ý mật khẩu
+                input: 'text', 
                 inputAttributes: {
                     inputmode: 'numeric',
-                    pattern: '[0-9]*', // Hiển thị bàn phím số trên điện thoại
-                    autocomplete: 'new-password'
+                    pattern: '[0-9]*',
+                    autocomplete: 'off',
+                    // Dùng CSS để biến chữ thành dấu chấm đen y hệt gõ mật khẩu
+                    style: '-webkit-text-security: disc;' 
                 },
                 inputLabel: 'Vui lòng nhập mã PIN bảo mật',
                 inputPlaceholder: '****',
-                allowOutsideClick: false, // Cấm click ra ngoài để tắt
-                allowEscapeKey: false,    // Cấm bấm phím ESC để tắt
+                allowOutsideClick: false, 
+                allowEscapeKey: false,    
                 confirmButtonText: 'Mở khóa',
                 confirmButtonColor: '#343a40',
                 scrollbarPadding: false,
                 preConfirm: (pin) => {
-                    // === THAY ĐỔI MÃ PIN CỦA BẠN TẠI ĐÂY ===
                     if (pin !== '6868') { 
                         Swal.showValidationMessage('❌ Mã PIN không chính xác!');
                         return false;
@@ -229,7 +507,10 @@
 
                 let [resDs, resCurrent, resClosedList] = await Promise.all([pDs, pCurrent, pClosedList]);
 
-                if(resDs.success) store.ds = resDs.data;
+                if(resDs.success) {
+                    store.ds = resDs.data;
+                }
+                
                 if(resCurrent.success) {
                     store.current = resCurrent.data;
                     currentSheetName = resCurrent.sheetName; 
@@ -251,9 +532,9 @@
                 
                 let loader = document.getElementById('startup-loading');
                 loader.style.opacity = '0';
+                
                 setTimeout(() => {
                     loader.style.display = 'none';
-                    // Gọi ổ khóa xuất hiện thay vì mở Menu ngay
                     requireSecurityPIN(); 
                 }, 500);
 
@@ -266,15 +547,22 @@
         function showCustomToast(message, type = 'success') {
             const container = document.getElementById('custom-toast-container');
             const toast = document.createElement('div');
+            
             toast.className = `custom-toast toast-${type}`;
             let icon = type === 'success' ? '✅ ' : 'ℹ️ ';
             toast.innerHTML = icon + message;
+            
             container.appendChild(toast);
             
-            setTimeout(() => { toast.classList.add('show'); }, 10);
+            setTimeout(() => { 
+                toast.classList.add('show'); 
+            }, 10);
+            
             setTimeout(() => {
                 toast.classList.remove('show');
-                setTimeout(() => { toast.remove(); }, 300);
+                setTimeout(() => { 
+                    toast.remove(); 
+                }, 300);
             }, 2500);
         }
 
@@ -310,7 +598,9 @@
                         text: 'Vui lòng không tắt trang web lúc này...', 
                         allowOutsideClick: false, 
                         scrollbarPadding: false,
-                        didOpen: () => { Swal.showLoading(); } 
+                        didOpen: () => { 
+                            Swal.showLoading(); 
+                        } 
                     });
 
                     fetch(API_URL, { 
@@ -331,11 +621,21 @@
                                 window.location.reload(); 
                             });
                         } else {
-                            Swal.fire({title: 'Lỗi hệ thống!', text: res.message, icon: 'error', scrollbarPadding: false});
+                            Swal.fire({
+                                title: 'Lỗi hệ thống!', 
+                                text: res.message, 
+                                icon: 'error', 
+                                scrollbarPadding: false
+                            });
                         }
                     })
                     .catch(e => { 
-                        Swal.fire({title: 'Lỗi kết nối!', text: 'Vui lòng kiểm tra lại mạng internet.', icon: 'error', scrollbarPadding: false}); 
+                        Swal.fire({
+                            title: 'Lỗi kết nối!', 
+                            text: 'Vui lòng kiểm tra lại mạng internet.', 
+                            icon: 'error', 
+                            scrollbarPadding: false
+                        }); 
                     });
                 }
             });
@@ -350,13 +650,16 @@
             document.getElementById('tableHead').innerHTML = '';
 
             let list = store.closedList;
+            
             if(list.length === 0) {
                 document.getElementById('tableBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px;">Chưa có kỳ nào được chốt trong hệ thống.</td></tr>';
             } else {
                 let html = '<tr><td colspan="10" style="text-align:center; padding: 20px;"><h3>Vui lòng chọn kỳ đã chốt để xem:</h3>';
+                
                 list.forEach(item => {
                      html += `<button class="mark-btn" style="margin: 10px; background: #17a2b8; padding: 12px 25px; width: auto;" onclick="loadClosedData('${item.id}')">📁 ${item.name.replace('Chốt-', '')}</button>`;
                 });
+                
                 html += '</td></tr>';
                 document.getElementById('tableBody').innerHTML = html;
             }
@@ -366,6 +669,7 @@
             currentViewMode = 'closed_data';
             globalData = store.closedData[fileId].data;
             currentSheetName = store.closedData[fileId].sheetName;
+            
             document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName.replace('Chốt-', '');
             renderTable();
         }
@@ -384,7 +688,10 @@
         }
 
         function updateTableTitle() {
-            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') return; 
+            if(currentViewMode === 'closed_list' || currentViewMode === 'closed_data') {
+                return; 
+            }
+            
             const titles = {
                 'ds': 'Danh Sách Mặt Bằng',
                 'all': 'Danh Sách Thu',
@@ -393,6 +700,7 @@
                 'mark_paid': 'Chế Độ: Cập Nhật Đóng Tiền',
                 'rep_search': 'Tra Cứu Theo Đại Diện' 
             };
+            
             let suffix = (currentSheetName && currentViewMode !== 'ds' && currentViewMode !== 'rep_search') ? ` (${currentSheetName})` : "";
             document.getElementById('tableTitle').innerText = titles[currentViewMode] + suffix;
         }
@@ -409,6 +717,7 @@
             if (viewMode === 'mark_paid' || viewMode === 'paid') {
                 nvSelect.style.display = 'inline-block';
                 dateInput.style.display = 'inline-block';
+                
                 if (viewMode === 'mark_paid') {
                     nvSelect.options[0].text = "-- BẮT BUỘC CHỌN NV --";
                     dateInput.style.display = 'none'; 
@@ -444,12 +753,19 @@
                     let st = String(row['Trạng thái'] || '').trim().toLowerCase();
                     return st !== 'chưa đóng' && st !== '';
                 });
+                
                 if (selectedNV !== "" || selectedDate !== "") {
                     filteredData = filteredData.filter(row => {
                         let st = String(row['Trạng thái'] || '').trim().toLowerCase();
-                        if (selectedNV !== "" && selectedDate !== "") return st === (selectedNV + selectedDate);
-                        else if (selectedNV !== "") return st.startsWith(selectedNV);
-                        else if (selectedDate !== "") return st.endsWith(selectedDate);
+                        
+                        if (selectedNV !== "" && selectedDate !== "") {
+                            return st === (selectedNV + selectedDate);
+                        } else if (selectedNV !== "") {
+                            return st.startsWith(selectedNV);
+                        } else if (selectedDate !== "") {
+                            return st.endsWith(selectedDate);
+                        }
+                        
                         return true;
                     });
                 }
@@ -462,7 +778,9 @@
             if (searchTerm !== '') {
                 filteredData = filteredData.filter(row => {
                     return Object.keys(row).some(key => {
-                        if (key === '_rowIndex' || key === '_sheetName') return false; 
+                        if (key === '_rowIndex' || key === '_sheetName') {
+                            return false; 
+                        }
                         let cellValue = String(row[key] || '').toLowerCase();
                         return cellValue.includes(searchTerm);
                     });
@@ -477,14 +795,27 @@
             }
 
             let headers = Object.keys(filteredData[0]).filter(h => h !== '_rowIndex' && h !== '_sheetName' && h !== '_daiDien' && h.trim().toLowerCase() !== 'đại diện');
-            if (currentViewMode === 'ds') headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
+            
+            if (currentViewMode === 'ds') {
+                headers = headers.filter(h => !h.toLowerCase().includes('trạng thái'));
+            }
 
             let isActionView = (currentViewMode === 'mark_paid' || currentViewMode === 'paid' || currentViewMode === 'all');
             
             let theadHtml = '';
-            if (currentViewMode === 'ds') theadHtml += `<th class="col-action">Sửa</th>`;
-            headers.forEach(header => { theadHtml += `<th>${header}</th>`; });
-            if (isActionView) theadHtml += `<th class="col-action">Thao tác</th>`;
+            
+            if (currentViewMode === 'ds') {
+                theadHtml += `<th class="col-action">Sửa</th>`;
+            }
+            
+            headers.forEach(header => { 
+                theadHtml += `<th>${header}</th>`; 
+            });
+            
+            if (isActionView) {
+                theadHtml += `<th class="col-action">Thao tác</th>`;
+            }
+            
             document.getElementById('tableHead').innerHTML = theadHtml;
 
             let totalCurrent = 0;
@@ -495,9 +826,12 @@
 
             if (currentViewMode === 'rep_search') {
                 let repGroups = {};
+                
                 filteredData.forEach(row => {
                     let rep = row._daiDien.trim();
-                    if(!repGroups[rep]) repGroups[rep] = [];
+                    if(!repGroups[rep]) {
+                        repGroups[rep] = [];
+                    }
                     repGroups[rep].push(row);
                 });
 
@@ -519,12 +853,20 @@
                         let y = r['Năm'];
                         let periodKey = isOldDebt ? `Nợ T${m}-${y}` : `T${m}-${y}`;
 
-                        if (!monthCounts[periodKey]) monthCounts[periodKey] = { total: 0, paid: 0, unpaid: 0 };
+                        if (!monthCounts[periodKey]) {
+                            monthCounts[periodKey] = { total: 0, paid: 0, unpaid: 0 };
+                        }
+                        
                         monthCounts[periodKey].total++;
 
                         let st = String(r['Trạng thái'] || r['Trạng Thái'] || '').trim().toLowerCase();
-                        if (st !== 'chưa đóng' && st !== '') monthCounts[periodKey].paid++;
-                        if (st === 'chưa đóng') monthCounts[periodKey].unpaid++;
+                        if (st !== 'chưa đóng' && st !== '') {
+                            monthCounts[periodKey].paid++;
+                        }
+                        
+                        if (st === 'chưa đóng') {
+                            monthCounts[periodKey].unpaid++;
+                        }
                     });
 
                     let currentPeriodKey = null;
@@ -539,11 +881,15 @@
 
                     for (let key in monthCounts) {
                         if (monthCounts[key].paid > 0 && monthCounts[key].unpaid > 0) {
-                            isWarning = true; warningReason = `Tháng ${key} có mặt bằng chưa thu tiền`; break;
+                            isWarning = true; 
+                            warningReason = `Tháng ${key} có mặt bằng chưa thu tiền`; 
+                            break;
                         }
                         if (baselineCount > 0 && key.startsWith('Nợ')) {
                             if (monthCounts[key].total !== baselineCount) {
-                                isWarning = true; warningReason = `Số lượng mặt bằng ${key} không khớp với tháng hiện tại`; break;
+                                isWarning = true; 
+                                warningReason = `Số lượng mặt bằng ${key} không khớp với tháng hiện tại`; 
+                                break;
                             }
                         }
                     }
@@ -592,7 +938,8 @@
                                 amountColumnIndex = index;
                                 let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
                                 if(!isNaN(num)) {
-                                    groupTotal += num; totalCurrent += num; 
+                                    groupTotal += num; 
+                                    totalCurrent += num; 
                                 }
                             }
                         });
@@ -613,9 +960,13 @@
                 let extractedMonth = "Hiện tại";
                 let extractedYear = "";
                 let baseName = currentSheetName.replace('Chốt-', ''); 
+                
                 if(baseName.includes('T') && baseName !== 'DS') {
                     let p = baseName.split(' ')[0].replace('T', '').split('-');
-                    if(p.length > 1) { extractedMonth = p[0]; extractedYear = "20" + p[1]; }
+                    if(p.length > 1) { 
+                        extractedMonth = p[0]; 
+                        extractedYear = "20" + p[1]; 
+                    }
                 }
 
                 filteredData.forEach(row => {
@@ -625,11 +976,14 @@
                     else if (currentViewMode === 'closed_data') {
                         let m = String(row['Tháng'] || '').trim();
                         let y = String(row['Năm'] || '').trim();
+                        
                         if (m === extractedMonth && y === extractedYear) { 
                             currentDataList.push(row); 
                         } else {
                             let key = `T${m}-${y}`;
-                            if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                            if(!debtGroups[key]) {
+                                debtGroups[key] = { month: m, year: y, rows: [] };
+                            }
                             debtGroups[key].rows.push(row);
                         }
                     }
@@ -640,7 +994,10 @@
                             let m = row['Tháng'] || '?';
                             let y = row['Năm'] || '?';
                             let key = `T${m}-${y}`;
-                            if(!debtGroups[key]) debtGroups[key] = { month: m, year: y, rows: [] };
+                            
+                            if(!debtGroups[key]) {
+                                debtGroups[key] = { month: m, year: y, rows: [] };
+                            }
                             debtGroups[key].rows.push(row);
                         }
                     }
@@ -696,7 +1053,11 @@
                                 let num = parseInt(String(val).replace(/\./g, '').replace(/,/g, ''));
                                 if(!isNaN(num)) {
                                     groupTotal += num;
-                                    if(isDebt) totalDebt += num; else totalCurrent += num;
+                                    if(isDebt) {
+                                        totalDebt += num;
+                                    } else {
+                                        totalCurrent += num;
+                                    }
                                 }
                             }
                         });
@@ -710,6 +1071,7 @@
                                 <button class="mark-btn" style="background-color: #17a2b8; min-width: 90px;" onclick="applyDiscount('${row._sheetName}', ${row._rowIndex})">Miễn/Giảm</button>
                             </td>`;
                         }
+                        
                         tbodyHtml += `</tr>`;
                     });
 
@@ -730,13 +1092,16 @@
                 }
 
                 let debtKeys = Object.keys(debtGroups);
+                
                 if (debtKeys.length > 0) {
                     tbodyHtml += `<tr class="section-divider title-debt"><td colspan="${totalColumns}">Nợ</td></tr>`;
                     
                     debtKeys.sort((a, b) => {
                         let ya = parseInt(debtGroups[a].year) || 0;
                         let yb = parseInt(debtGroups[b].year) || 0;
-                        if (ya !== yb) return ya - yb;
+                        if (ya !== yb) {
+                            return ya - yb;
+                        }
                         return (parseInt(debtGroups[a].month) || 0) - (parseInt(debtGroups[b].month) || 0);
                     });
                     
@@ -817,13 +1182,21 @@
                 scrollbarPadding: false, 
                 didOpen: () => {
                     const inputTien = document.getElementById('swal-tien');
-                    inputTien.addEventListener('input', function(e) { formatCurrencyInput(this); });
+                    inputTien.addEventListener('input', function(e) { 
+                        formatCurrencyInput(this); 
+                    });
                 },
                 preConfirm: () => {
                     let tien = document.getElementById('swal-tien').value;
                     let lydo = document.getElementById('swal-lydo').value;
-                    if (!lydo.trim()) { Swal.showValidationMessage('🛑 BẮT BUỘC phải nhập lý do miễn/giảm!'); return false; }
-                    if (tien.trim() === '') { Swal.showValidationMessage('🛑 Vui lòng nhập số tiền!'); return false; }
+                    if (!lydo.trim()) { 
+                        Swal.showValidationMessage('🛑 BẮT BUỘC phải nhập lý do miễn/giảm!'); 
+                        return false; 
+                    }
+                    if (tien.trim() === '') { 
+                        Swal.showValidationMessage('🛑 Vui lòng nhập số tiền!'); 
+                        return false; 
+                    }
                     return { tien: tien, note: lydo };
                 }
             }).then((result) => {
@@ -831,7 +1204,14 @@
                     let newTien = result.value.tien; 
                     let newNote = result.value.note;
 
-                    Swal.fire({ title: 'Đang xử lý...', allowOutsideClick: false, scrollbarPadding: false, didOpen: () => { Swal.showLoading(); } });
+                    Swal.fire({ 
+                        title: 'Đang xử lý...', 
+                        allowOutsideClick: false,
+                        scrollbarPadding: false, 
+                        didOpen: () => { 
+                            Swal.showLoading(); 
+                        } 
+                    });
 
                     fetch(API_URL, {
                         method: 'POST', 
@@ -841,30 +1221,54 @@
                     .then(r => r.json())
                     .then(res => {
                         if (res.success) {
-                            rowData['Thành tiền'] = newTien; rowData['Ghi chú'] = newNote; 
-                            renderTable(); Swal.close(); 
+                            rowData['Thành tiền'] = newTien; 
+                            rowData['Ghi chú'] = newNote; 
+                            renderTable();
+                            Swal.close(); 
                             showCustomToast('Cập nhật thành công!', 'success');
-                        } else { Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); }
+                        } else { 
+                            Swal.fire({
+                                title: 'Lỗi!', 
+                                text: res.message, 
+                                icon: 'error', 
+                                scrollbarPadding: false
+                            }); 
+                        }
                     })
-                    .catch(err => { Swal.fire({title: 'Lỗi kết nối!', text: 'Không thể kết nối đến máy chủ.', icon: 'error', scrollbarPadding: false}); });
+                    .catch(err => { 
+                        Swal.fire({
+                            title: 'Lỗi kết nối!', 
+                            text: 'Không thể kết nối đến máy chủ.', 
+                            icon: 'error', 
+                            scrollbarPadding: false
+                        }); 
+                    });
                 }
             });
         }
 
         function editRowInfo(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
-            if (!rowData) return;
+            if (!rowData) {
+                return;
+            }
 
             let editableHeaders = Object.keys(rowData).filter(h => h !== '_rowIndex' && h !== '_sheetName' && h !== '_daiDien' && !h.toLowerCase().includes('đại diện') && !h.toLowerCase().includes('trạng thái'));
+            
             let optionsObj = {}; 
-            editableHeaders.forEach(h => { optionsObj[h] = h; });
+            editableHeaders.forEach(h => { 
+                optionsObj[h] = h; 
+            });
 
             Swal.fire({
                 title: 'Chọn thông tin cần sửa', 
                 input: 'select', 
                 inputOptions: optionsObj, 
                 inputPlaceholder: '--- Chọn cột dữ liệu ---',
-                showCancelButton: true, confirmButtonText: 'Tiếp tục', cancelButtonText: 'Hủy', scrollbarPadding: false 
+                showCancelButton: true, 
+                confirmButtonText: 'Tiếp tục', 
+                cancelButtonText: 'Hủy',
+                scrollbarPadding: false 
             }).then((result) => {
                 if (result.isConfirmed && result.value) {
                     let selectedColumn = result.value;
@@ -875,19 +1279,34 @@
                         input: 'text', 
                         inputAttributes: { autocomplete: 'off' },
                         inputValue: currentValue,
-                        showCancelButton: true, confirmButtonText: 'Lưu thay đổi', cancelButtonText: 'Quay lại', confirmButtonColor: '#007bff', scrollbarPadding: false,
+                        showCancelButton: true, 
+                        confirmButtonText: 'Lưu thay đổi', 
+                        cancelButtonText: 'Quay lại', 
+                        confirmButtonColor: '#007bff',
+                        scrollbarPadding: false,
                         didOpen: () => {
                             if (selectedColumn.toLowerCase().includes('tiền') || selectedColumn.toLowerCase().includes('mức thu')) {
                                 const inputEl = Swal.getInput();
-                                inputEl.addEventListener('input', function(e) { formatCurrencyInput(this); });
+                                inputEl.addEventListener('input', function(e) { 
+                                    formatCurrencyInput(this); 
+                                });
                             }
                         }
                     }).then((editResult) => {
                         if (editResult.isConfirmed) {
                             let newValue = editResult.value;
-                            if (newValue === currentValue) return;
+                            if (newValue === currentValue) {
+                                return;
+                            }
 
-                            Swal.fire({ title: 'Đang lưu...', allowOutsideClick: false, scrollbarPadding: false, didOpen: () => { Swal.showLoading(); } });
+                            Swal.fire({ 
+                                title: 'Đang lưu...', 
+                                allowOutsideClick: false, 
+                                scrollbarPadding: false,
+                                didOpen: () => { 
+                                    Swal.showLoading(); 
+                                } 
+                            });
 
                             fetch(API_URL, {
                                 method: 'POST', 
@@ -897,11 +1316,27 @@
                             .then(r => r.json())
                             .then(res => {
                                 if(res.success) {
-                                    rowData[selectedColumn] = newValue; renderTable(); Swal.close(); 
+                                    rowData[selectedColumn] = newValue; 
+                                    renderTable();
+                                    Swal.close(); 
                                     showCustomToast('Đã lưu thay đổi!', 'success');
-                                } else { Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); }
+                                } else { 
+                                    Swal.fire({
+                                        title: 'Lỗi!', 
+                                        text: res.message, 
+                                        icon: 'error', 
+                                        scrollbarPadding: false
+                                    }); 
+                                }
                             })
-                            .catch(err => { Swal.fire({title: 'Lỗi kết nối!', text: 'Không thể kết nối đến máy chủ.', icon: 'error', scrollbarPadding: false}); });
+                            .catch(err => { 
+                                Swal.fire({
+                                    title: 'Lỗi kết nối!', 
+                                    text: 'Không thể kết nối đến máy chủ.', 
+                                    icon: 'error', 
+                                    scrollbarPadding: false
+                                }); 
+                            });
                         }
                     });
                 }
@@ -918,11 +1353,17 @@
                 inputAttributes: { autocomplete: 'off' },
                 inputLabel: `Nhập nội dung ghi chú mới:`, 
                 inputValue: currentNote,
-                showCancelButton: true, confirmButtonText: 'Lưu thay đổi', cancelButtonText: 'Hủy bỏ', confirmButtonColor: '#007bff', scrollbarPadding: false 
+                showCancelButton: true, 
+                confirmButtonText: 'Lưu thay đổi', 
+                cancelButtonText: 'Hủy bỏ', 
+                confirmButtonColor: '#007bff',
+                scrollbarPadding: false 
             }).then((result) => {
                 if (result.isConfirmed) {
                     let newNote = result.value;
-                    if (newNote === currentNote) return; 
+                    if (newNote === currentNote) {
+                        return; 
+                    }
 
                     let noteElement = document.getElementById(`note-${rowSheetName}-${rowIndex}`);
                     let oldText = noteElement.innerText; 
@@ -936,11 +1377,29 @@
                     .then(r => r.json())
                     .then(res => {
                         if(res.success) {
-                            rowData['Ghi chú'] = newNote; noteElement.innerText = newNote; Swal.close(); 
+                            rowData['Ghi chú'] = newNote; 
+                            noteElement.innerText = newNote;
+                            Swal.close(); 
                             showCustomToast('Đã lưu ghi chú!', 'success');
-                        } else { Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); noteElement.innerText = oldText; }
+                        } else { 
+                            Swal.fire({
+                                title: 'Lỗi!', 
+                                text: res.message, 
+                                icon: 'error', 
+                                scrollbarPadding: false
+                            }); 
+                            noteElement.innerText = oldText; 
+                        }
                     })
-                    .catch(err => { Swal.fire({title: 'Lỗi!', text: 'Không kết nối được.', icon: 'error', scrollbarPadding: false}); noteElement.innerText = oldText; });
+                    .catch(err => { 
+                        Swal.fire({
+                            title: 'Lỗi!', 
+                            text: 'Không kết nối được.', 
+                            icon: 'error', 
+                            scrollbarPadding: false
+                        }); 
+                        noteElement.innerText = oldText; 
+                    });
                 }
             });
         }
@@ -951,7 +1410,12 @@
             if (isCollecting) {
                 let selectedNV = document.getElementById('nvSelect').value;
                 if (!selectedNV) {
-                    Swal.fire({title: 'Lưu ý', text: 'Vui lòng chọn tên Nhân viên ở menu phía trên trước khi thu tiền!', icon: 'warning', scrollbarPadding: false});
+                    Swal.fire({
+                        title: 'Lưu ý', 
+                        text: 'Vui lòng chọn tên Nhân viên ở menu phía trên trước khi thu tiền!', 
+                        icon: 'warning', 
+                        scrollbarPadding: false
+                    });
                     return;
                 }
 
@@ -961,9 +1425,16 @@
                     inputAttributes: { autocomplete: 'off' },
                     inputLabel: `Sẽ được gắn với mã nhân viên: ${selectedNV}`,
                     inputPlaceholder: 'Ví dụ: 29s',
-                    showCancelButton: true, confirmButtonText: 'Xác nhận thu', cancelButtonText: 'Hủy', confirmButtonColor: '#28a745', scrollbarPadding: false, 
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận thu',
+                    cancelButtonText: 'Hủy',
+                    confirmButtonColor: '#28a745',
+                    scrollbarPadding: false, 
                     preConfirm: (inputDay) => {
-                        if (!inputDay || inputDay.trim() === '') { Swal.showValidationMessage('Bạn phải nhập ngày đóng tiền!'); return false; }
+                        if (!inputDay || inputDay.trim() === '') {
+                            Swal.showValidationMessage('Bạn phải nhập ngày đóng tiền!');
+                            return false;
+                        }
                         return inputDay.trim();
                     }
                 }).then((result) => {
@@ -974,17 +1445,27 @@
                 });
             } else {
                 Swal.fire({
-                    title: 'Xác nhận hoàn tác?', text: `Trạng thái sẽ được chuyển về: CHƯA ĐÓNG`, icon: 'warning',
-                    showCancelButton: true, confirmButtonColor: '#dc3545', cancelButtonColor: '#6c757d', confirmButtonText: 'Đồng ý hoàn tác', cancelButtonText: 'Hủy', scrollbarPadding: false 
+                    title: 'Xác nhận hoàn tác?',
+                    text: `Trạng thái sẽ được chuyển về: CHƯA ĐÓNG`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Đồng ý hoàn tác',
+                    cancelButtonText: 'Hủy',
+                    scrollbarPadding: false 
                 }).then((result) => {
-                    if (result.isConfirmed) { executePaymentRequest(rowSheetName, rowIndex, btnElement, 'chưa đóng', false); }
+                    if (result.isConfirmed) {
+                        executePaymentRequest(rowSheetName, rowIndex, btnElement, 'chưa đóng', false);
+                    }
                 });
             }
         }
 
         function executePaymentRequest(rowSheetName, rowIndex, btnElement, finalStatus, isCollecting) {
             let originalText = btnElement.innerText;
-            btnElement.innerText = "⏳..."; btnElement.disabled = true;
+            btnElement.innerText = "⏳..."; 
+            btnElement.disabled = true;
 
             fetch(API_URL, {
                 method: 'POST', 
@@ -995,17 +1476,38 @@
             .then(res => {
                 if(res.success) {
                     let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
-                    if(rowData) rowData['Trạng thái'] = finalStatus;
+                    
+                    if(rowData) {
+                        rowData['Trạng thái'] = finalStatus;
+                    }
+                    
                     renderTable();
-                    if (isCollecting) showCustomToast('Đã thu tiền!', 'success'); else showCustomToast('Đã hoàn tác!', 'info');
+                    
+                    if (isCollecting) {
+                        showCustomToast('Đã thu tiền!', 'success');
+                    } else {
+                        showCustomToast('Đã hoàn tác!', 'info');
+                    }
                 } else { 
-                    Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
-                    btnElement.innerText = originalText; btnElement.disabled = false; 
+                    Swal.fire({
+                        title: 'Lỗi!', 
+                        text: res.message, 
+                        icon: 'error', 
+                        scrollbarPadding: false
+                    }); 
+                    btnElement.innerText = originalText; 
+                    btnElement.disabled = false; 
                 }
             })
             .catch(err => { 
-                Swal.fire({title: 'Lỗi!', text: 'Vui lòng kiểm tra mạng.', icon: 'error', scrollbarPadding: false}); 
-                btnElement.innerText = originalText; btnElement.disabled = false; 
+                Swal.fire({
+                    title: 'Lỗi!', 
+                    text: 'Vui lòng kiểm tra mạng.', 
+                    icon: 'error', 
+                    scrollbarPadding: false
+                }); 
+                btnElement.innerText = originalText; 
+                btnElement.disabled = false; 
             });
         }
     </script>
