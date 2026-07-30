@@ -429,7 +429,6 @@
             <div class="left-controls">
                 <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
                 
-                <!-- NÚT TẢI EXCEL MỚI ĐƯỢC THÊM VÀO -->
                 <button id="exportExcelBtn" class="back-btn" style="background-color: #198754; display: none;" onclick="exportToExcel()">📊 Tải Excel</button>
                 
                 <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
@@ -692,7 +691,6 @@
             nvSelect.style.display = 'inline-block';
             dateInput.style.display = 'inline-block';
             
-            // Hiển thị nút Xuất Excel
             document.getElementById('exportExcelBtn').style.display = 'inline-block';
             
             nvSelect.options[0].text = "-- Tất cả nhân viên --";
@@ -787,7 +785,7 @@
                     let st = String(row['Trạng thái'] || '').trim().toLowerCase();
                     return st !== 'chưa đóng' && st !== '';
                 });
-            } else if (currentViewMode === 'unpaid') { 
+            } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
             } else if (currentViewMode === 'rep_search') {
                 filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
@@ -1571,7 +1569,6 @@
             });
         }
 
-        // --- TÍNH NĂNG MỚI: XUẤT FILE EXCEL CHUẨN ĐỊNH DẠNG ---
         function exportToExcel() {
             let dataByPeriod = {};
             let extractedMonth = "Hiện tại";
@@ -1637,7 +1634,17 @@
                     .col-header { font-weight: bold; text-align: center; }
                 </style>
             </head>
-            <body>`;
+            <body>
+            <table>
+                <tr>
+                    <td colspan="3" class="bold text-center no-border">UBND PHƯỜNG PHƯỚC HẬU<br>BQL CHỢ PHƯỚC HẬU</td>
+                    <td colspan="8" class="no-border"></td>
+                </tr>
+                <tr><td colspan="11" class="no-border"></td></tr>
+                <tr>
+                    <td colspan="11" class="header-title">DANH SÁCH THU TIỀN MẶT BẰNG Ở ĐIỂM 1</td>
+                </tr>
+            `;
 
             let periodKeys = Object.keys(dataByPeriod);
             periodKeys.sort((a, b) => {
@@ -1653,21 +1660,11 @@
                 let pData = dataByPeriod[pKey];
                 let titleText = pData.isCurrent ? `THÁNG ${pData.month} NĂM ${pData.year}` : `NỢ THÁNG ${pData.month} NĂM ${pData.year}`;
 
-                excelHtml += `<table>`;
-
                 excelHtml += `
                 <tr>
-                    <td colspan="3" class="bold text-center no-border">UBND PHƯỜNG PHƯỚC HẬU<br>BQL CHỢ PHƯỚC HẬU</td>
-                    <td colspan="7" class="no-border"></td>
+                    <td colspan="11" class="sub-title">${titleText}</td>
                 </tr>
-                <tr><td colspan="10" class="no-border"></td></tr>
-                <tr>
-                    <td colspan="10" class="header-title">DANH SÁCH THU TIỀN MẶT BẰNG Ở ĐIỂM 1</td>
-                </tr>
-                <tr>
-                    <td colspan="10" class="sub-title">${titleText}</td>
-                </tr>
-                <tr><td colspan="10" class="no-border"></td></tr>`;
+                <tr><td colspan="11" class="no-border"></td></tr>`;
 
                 let grandTotal = 0;
 
@@ -1683,7 +1680,7 @@
 
                         excelHtml += `
                         <tr>
-                            <td colspan="10" class="group-header">${groupTitle}</td>
+                            <td colspan="11" class="group-header">${groupTitle}</td>
                         </tr>`;
                     }
 
@@ -1699,6 +1696,7 @@
                         <td class="col-header">THỰC THU</td>
                         <td class="col-header">NỢ</td>
                         <td class="col-header">GHI CHÚ</td>
+                        <td class="col-header">NGƯỜI THU</td>
                     </tr>`;
 
                     let groupTotal = 0;
@@ -1718,12 +1716,9 @@
                             grandTotal += num;
                         }
 
-                        let ghiChuText = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim();
-                        let note = String(row['Ghi chú'] || '').trim();
-                        if (ghiChuText.toLowerCase() === 'chưa đóng') ghiChuText = '';
-                        if (note !== '') {
-                            ghiChuText = ghiChuText ? `${ghiChuText} - ${note}` : note;
-                        }
+                        let nguoiThuText = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim();
+                        let ghiChuText = String(row['Ghi chú'] || '').trim();
+                        if (nguoiThuText.toLowerCase() === 'chưa đóng') nguoiThuText = '';
 
                         excelHtml += `
                         <tr>
@@ -1737,6 +1732,7 @@
                             <td></td>
                             <td></td>
                             <td class="text-center">${ghiChuText}</td>
+                            <td class="text-center">${nguoiThuText}</td>
                         </tr>`;
                     });
 
@@ -1744,11 +1740,9 @@
                     <tr>
                         <td colspan="6" class="bold text-center">Tổng Cộng:</td>
                         <td class="bold text-right">${groupTotal.toLocaleString('vi-VN')}</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td colspan="4"></td>
                     </tr>
-                    <tr><td colspan="10" class="no-border"></td></tr>
+                    <tr><td colspan="11" class="no-border"></td></tr>
                     `;
                 });
 
@@ -1756,18 +1750,14 @@
                 <tr>
                     <td colspan="6" class="bold text-center">TỔNG ${titleText.replace('NỢ ', '')} ĐÃ ĐÓNG:</td>
                     <td class="bold text-right">${grandTotal.toLocaleString('vi-VN')}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td colspan="4"></td>
                 </tr>
-                <tr><td colspan="10" class="no-border"></td></tr>
-                <tr><td colspan="10" class="no-border"></td></tr>
+                <tr><td colspan="11" class="no-border"></td></tr>
+                <tr><td colspan="11" class="no-border"></td></tr>
                 `;
-
-                excelHtml += `</table>`;
             });
 
-            excelHtml += `</body></html>`;
+            excelHtml += `</table></body></html>`;
 
             let blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
             let url = URL.createObjectURL(blob);
