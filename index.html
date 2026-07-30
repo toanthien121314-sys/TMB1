@@ -464,17 +464,14 @@
         let currentSheetName = ""; 
         let currentViewMode = 'all'; 
 
-        // --- CỬA KHÓA MÃ PIN ĐÃ ĐƯỢC CHỐNG GỢI Ý MẬT KHẨU ---
         function requireSecurityPIN() {
             Swal.fire({
                 title: '🔒 Xác Nhận Truy Cập',
-                // Đổi thành 'text' để lừa trình duyệt không hiện gợi ý mật khẩu
                 input: 'text', 
                 inputAttributes: {
                     inputmode: 'numeric',
                     pattern: '[0-9]*',
                     autocomplete: 'off',
-                    // Dùng CSS để biến chữ thành dấu chấm đen y hệt gõ mật khẩu
                     style: '-webkit-text-security: disc;' 
                 },
                 inputLabel: 'Vui lòng nhập mã PIN bảo mật',
@@ -1075,7 +1072,8 @@
                         tbodyHtml += `</tr>`;
                     });
 
-                    if (currentViewMode !== 'ds' && currentViewMode !== 'closed_data' && titleText !== "") {
+                    // --- ĐÂY LÀ DÒNG LỆNH ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ HIỆN TỔNG TRONG DANH SÁCH CHỐT ---
+                    if (currentViewMode !== 'ds' && titleText !== "") {
                         let subTotalText = isDebt ? `Tổng nợ tháng ${debtMonth} năm ${debtYear}` : `Tổng tháng ${extractedMonth} năm ${extractedYear}`;
                         tbodyHtml += `
                         <tr class="subtotal-row ${subtotalClass}">
