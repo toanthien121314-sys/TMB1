@@ -647,6 +647,12 @@
             document.getElementById('tableTitle').innerText = "Danh Sách Đã Chốt";
             document.getElementById('tableFoot').innerHTML = '';
             document.getElementById('tableHead').innerHTML = '';
+            
+            // Ẩn bộ lọc và xóa nội dung đã nhập trước đó để tránh dính dữ liệu chéo
+            document.getElementById('nvSelect').style.display = 'none';
+            document.getElementById('dateInput').style.display = 'none';
+            document.getElementById('nvSelect').value = '';
+            document.getElementById('dateInput').value = '';
 
             let list = store.closedList;
             
@@ -670,6 +676,16 @@
             currentSheetName = store.closedData[fileId].sheetName;
             
             document.getElementById('tableTitle').innerText = "Kỳ Đã Chốt: " + currentSheetName.replace('Chốt-', '');
+            
+            // Bật bộ lọc lên và gán chữ -- Tất cả nhân viên -- vào mục đầu tiên
+            let nvSelect = document.getElementById('nvSelect');
+            let dateInput = document.getElementById('dateInput');
+            nvSelect.style.display = 'inline-block';
+            dateInput.style.display = 'inline-block';
+            nvSelect.options[0].text = "-- Tất cả nhân viên --";
+            nvSelect.value = '';
+            dateInput.value = '';
+            
             renderTable();
         }
         
@@ -680,6 +696,8 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('nvSelect').style.display = 'none';
             document.getElementById('dateInput').style.display = 'none';
+            document.getElementById('nvSelect').value = '';
+            document.getElementById('dateInput').value = '';
             
             globalData = store.current;
             currentSheetName = store.currentSheetName; 
@@ -727,8 +745,10 @@
             } else {
                 nvSelect.style.display = 'none';
                 dateInput.style.display = 'none';
-                dateInput.value = '';
             }
+            
+            nvSelect.value = '';
+            dateInput.value = '';
 
             if (viewMode === 'ds') {
                 globalData = store.ds;
@@ -754,7 +774,14 @@
                     let st = String(row['Trạng thái'] || '').trim().toLowerCase();
                     return st !== 'chưa đóng' && st !== '';
                 });
-                
+            } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
+                filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
+            } else if (currentViewMode === 'rep_search') {
+                filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
+            }
+
+            // --- BỔ SUNG LOGIC LỌC TÌM KIẾM NHÂN VIÊN VÀ NGÀY CHO FILE CHỐT ---
+            if (currentViewMode === 'paid' || currentViewMode === 'closed_data') {
                 if (selectedNV !== "" || selectedDate !== "") {
                     filteredData = filteredData.filter(row => {
                         let st = String(row['Trạng thái'] || '').trim().toLowerCase();
@@ -770,10 +797,6 @@
                         return true;
                     });
                 }
-            } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
-                filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
-            } else if (currentViewMode === 'rep_search') {
-                filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
             }
 
             if (searchTerm !== '') {
