@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</title>
+    
+    <!-- 3 dòng ép trình duyệt KHÔNG ĐƯỢC LƯU CACHE giao diện cũ -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* --- ÉP DUY NHẤT 1 THANH CUỘN VÀ CHỐNG GIẬT MÀN HÌNH --- */
@@ -426,6 +429,9 @@
             <div class="left-controls">
                 <button class="back-btn" onclick="showMenu()">⬅ Quay lại Menu</button>
                 
+                <!-- NÚT TẢI EXCEL MỚI ĐƯỢC THÊM VÀO -->
+                <button id="exportExcelBtn" class="back-btn" style="background-color: #198754; display: none;" onclick="exportToExcel()">📊 Tải Excel</button>
+                
                 <select id="nvSelect" class="nv-select" style="display:none;" onchange="renderTable()">
                     <option value="">-- Chọn nhân viên --</option>
                     <option value="T">Trần Thanh Tú</option>
@@ -500,10 +506,9 @@
             });
         }
 
-window.onload = async function() {
+        window.onload = async function() {
             try {
-                let timeStamp = new Date().getTime();
-                // Phải nối thêm &t=" + timeStamp vào cuối như thế này:
+                let timeStamp = new Date().getTime(); 
                 let pDs = fetch(API_URL + "?type=ds&t=" + timeStamp).then(r => r.json());
                 let pCurrent = fetch(API_URL + "?type=current&t=" + timeStamp).then(r => r.json());
                 let pClosedList = fetch(API_URL + "?type=closed_list&t=" + timeStamp).then(r => r.json());
@@ -523,7 +528,7 @@ window.onload = async function() {
                 if(resClosedList.success) {
                     store.closedList = resClosedList.data;
                     let closedPromises = store.closedList.map(item => 
-                        fetch(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name)
+                        fetch(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name + "&t=" + timeStamp)
                         .then(r => r.json())
                         .then(res => {
                             if(res.success) {
@@ -655,6 +660,7 @@ window.onload = async function() {
             
             document.getElementById('nvSelect').style.display = 'none';
             document.getElementById('dateInput').style.display = 'none';
+            document.getElementById('exportExcelBtn').style.display = 'none';
             document.getElementById('nvSelect').value = '';
             document.getElementById('dateInput').value = '';
 
@@ -685,6 +691,10 @@ window.onload = async function() {
             let dateInput = document.getElementById('dateInput');
             nvSelect.style.display = 'inline-block';
             dateInput.style.display = 'inline-block';
+            
+            // Hiển thị nút Xuất Excel
+            document.getElementById('exportExcelBtn').style.display = 'inline-block';
+            
             nvSelect.options[0].text = "-- Tất cả nhân viên --";
             nvSelect.value = '';
             dateInput.value = '';
@@ -699,6 +709,7 @@ window.onload = async function() {
             document.getElementById('searchInput').value = '';
             document.getElementById('nvSelect').style.display = 'none';
             document.getElementById('dateInput').style.display = 'none';
+            document.getElementById('exportExcelBtn').style.display = 'none';
             
             globalData = store.current;
             currentSheetName = store.currentSheetName; 
@@ -729,6 +740,7 @@ window.onload = async function() {
             document.getElementById('screenMenu').style.display = 'none';
             document.getElementById('screenTable').style.display = 'block';
             document.getElementById('searchInput').value = '';
+            document.getElementById('exportExcelBtn').style.display = 'none';
 
             let nvSelect = document.getElementById('nvSelect');
             let dateInput = document.getElementById('dateInput');
@@ -775,8 +787,7 @@ window.onload = async function() {
                     let st = String(row['Trạng thái'] || '').trim().toLowerCase();
                     return st !== 'chưa đóng' && st !== '';
                 });
-            } else if (currentViewMode === 'unpaid' || currentViewMode === 'mark_paid') {
-                // KHÔI PHỤC: mark_paid (Đóng tiền) sẽ khởi đầu bằng danh sách "chưa đóng"
+            } else if (currentViewMode === 'unpaid') { 
                 filteredData = globalData.filter(row => String(row['Trạng thái'] || '').trim().toLowerCase() === 'chưa đóng');
             } else if (currentViewMode === 'rep_search') {
                 filteredData = filteredData.filter(row => row._daiDien && row._daiDien.trim() !== '');
@@ -1047,6 +1058,9 @@ window.onload = async function() {
                             </td>`;
                         }
 
+                        let st = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim().toLowerCase();
+                        let isPaid = (st !== 'chưa đóng' && st !== '');
+
                         headers.forEach((header, index) => {
                             let val = row[header] !== undefined ? row[header] : '';
                             let strVal = String(val).trim().toLowerCase();
@@ -1064,7 +1078,6 @@ window.onload = async function() {
                                     </td>`;
                                 } 
                                 else if (header.toLowerCase().includes('trạng thái')) {
-                                    let isPaid = (strVal !== 'chưa đóng' && strVal !== '');
                                     let statusClass = isPaid ? 'status-paid' : 'status-unpaid';
                                     let displayVal = isPaid ? val : 'chưa đóng';
                                     tbodyHtml += `<td class="normal-cell"><span class="status-badge ${statusClass}">${displayVal}</span></td>`;
@@ -1088,7 +1101,11 @@ window.onload = async function() {
                         });
                         
                         if(currentViewMode === 'mark_paid') {
-                            tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'PAY')">Đóng tiền</button></td>`;
+                            if (isPaid) {
+                                tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
+                            } else {
+                                tbodyHtml += `<td class="col-action normal-cell"><button class="mark-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'PAY')">Đóng tiền</button></td>`;
+                            }
                         } else if (currentViewMode === 'paid') {
                             tbodyHtml += `<td class="col-action normal-cell"><button class="undo-btn" onclick="updateStatus('${row._sheetName}', ${row._rowIndex}, this, 'chưa đóng')">Hoàn tác</button></td>`;
                         } else if (currentViewMode === 'all') {
@@ -1506,7 +1523,6 @@ window.onload = async function() {
                         rowData['Trạng thái'] = finalStatus;
                     }
                     
-                    // --- KHÔI PHỤC LẠI LOGIC GỐC CỦA BẠN: Sửa trực tiếp trên giao diện (DOM) ---
                     let tr = btnElement.closest('tr');
                     let badge = tr.querySelector('.status-badge');
                     
@@ -1553,6 +1569,215 @@ window.onload = async function() {
                 btnElement.innerText = originalText; 
                 btnElement.disabled = false; 
             });
+        }
+
+        // --- TÍNH NĂNG MỚI: XUẤT FILE EXCEL CHUẨN ĐỊNH DẠNG ---
+        function exportToExcel() {
+            let dataByPeriod = {};
+            let extractedMonth = "Hiện tại";
+            let extractedYear = "";
+            let baseName = currentSheetName.replace('Chốt-', '');
+
+            if(baseName.includes('T') && baseName !== 'DS') {
+                let p = baseName.split(' ')[0].replace('T', '').split('-');
+                if(p.length > 1) {
+                    extractedMonth = p[0];
+                    extractedYear = "20" + p[1];
+                }
+            }
+
+            globalData.forEach(row => {
+                if (!row['Họ và tên']) return;
+
+                let m = String(row['Tháng'] || '').trim();
+                let y = String(row['Năm'] || '').trim();
+                let isCurrent = (m === extractedMonth && y === extractedYear);
+                let periodKey = isCurrent ? `T${m}-${y}` : `Nợ T${m}-${y}`;
+
+                if(!dataByPeriod[periodKey]) {
+                    dataByPeriod[periodKey] = {
+                        isCurrent: isCurrent,
+                        month: m,
+                        year: y,
+                        groups: {
+                            'Cố định': [],
+                            'Không cố định': [],
+                            'Thu phí tạm': [],
+                            'Khác': []
+                        }
+                    };
+                }
+
+                let loai = String(row['Phân loại MB'] || '').trim().toLowerCase();
+                let loaiKey = 'Khác';
+                if(loai === 'cố định') loaiKey = 'Cố định';
+                else if(loai.includes('không cố định')) loaiKey = 'Không cố định';
+                else if(loai.includes('tạm') || loai.includes('hoa chi')) loaiKey = 'Thu phí tạm';
+                else loaiKey = 'Cố định'; 
+
+                if(dataByPeriod[periodKey].groups[loaiKey]) {
+                    dataByPeriod[periodKey].groups[loaiKey].push(row);
+                }
+            });
+
+            let excelHtml = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    table { border-collapse: collapse; font-family: 'Times New Roman', serif; font-size: 12pt; }
+                    th, td { border: 0.5pt solid black; padding: 5px; vertical-align: middle; }
+                    .no-border { border: none !important; }
+                    .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    .bold { font-weight: bold; }
+                    .header-title { font-size: 16pt; font-weight: bold; text-align: center; border: none !important; }
+                    .sub-title { font-size: 14pt; font-weight: bold; text-align: center; border: none !important; }
+                    .group-header { font-weight: bold; text-align: center; font-size: 14pt; }
+                    .col-header { font-weight: bold; text-align: center; }
+                </style>
+            </head>
+            <body>`;
+
+            let periodKeys = Object.keys(dataByPeriod);
+            periodKeys.sort((a, b) => {
+                if(dataByPeriod[a].isCurrent) return -1;
+                if(dataByPeriod[b].isCurrent) return 1;
+                let ya = parseInt(dataByPeriod[a].year) || 0;
+                let yb = parseInt(dataByPeriod[b].year) || 0;
+                if (ya !== yb) return ya - yb;
+                return parseInt(dataByPeriod[a].month) - parseInt(dataByPeriod[b].month);
+            });
+
+            periodKeys.forEach(pKey => {
+                let pData = dataByPeriod[pKey];
+                let titleText = pData.isCurrent ? `THÁNG ${pData.month} NĂM ${pData.year}` : `NỢ THÁNG ${pData.month} NĂM ${pData.year}`;
+
+                excelHtml += `<table>`;
+
+                excelHtml += `
+                <tr>
+                    <td colspan="3" class="bold text-center no-border">UBND PHƯỜNG PHƯỚC HẬU<br>BQL CHỢ PHƯỚC HẬU</td>
+                    <td colspan="7" class="no-border"></td>
+                </tr>
+                <tr><td colspan="10" class="no-border"></td></tr>
+                <tr>
+                    <td colspan="10" class="header-title">DANH SÁCH THU TIỀN MẶT BẰNG Ở ĐIỂM 1</td>
+                </tr>
+                <tr>
+                    <td colspan="10" class="sub-title">${titleText}</td>
+                </tr>
+                <tr><td colspan="10" class="no-border"></td></tr>`;
+
+                let grandTotal = 0;
+
+                ['Cố định', 'Không cố định', 'Thu phí tạm', 'Khác'].forEach(gKey => {
+                    let rows = pData.groups[gKey];
+                    if(!rows || rows.length === 0) return;
+
+                    if(gKey !== 'Cố định') {
+                        let groupTitle = "DANH SÁCH THU";
+                        if(gKey === 'Không cố định') groupTitle = "DANH SÁCH THU KHÔNG CỐ ĐỊNH (THU ĐẦU THÁNG)";
+                        else if(gKey === 'Thu phí tạm') groupTitle = "DANH SÁCH THU PHÍ TẠM (PHÍA TRƯỚC BÃI XE CŨ)";
+                        else groupTitle = "DANH SÁCH THU KHÁC";
+
+                        excelHtml += `
+                        <tr>
+                            <td colspan="10" class="group-header">${groupTitle}</td>
+                        </tr>`;
+                    }
+
+                    excelHtml += `
+                    <tr>
+                        <td class="col-header">Số Lô</td>
+                        <td class="col-header">Số TT</td>
+                        <td class="col-header">HỌ VÀ TÊN</td>
+                        <td class="col-header">NGÀNH HÀNG</td>
+                        <td class="col-header">DIỆN TÍCH</td>
+                        <td class="col-header">MỨC THU</td>
+                        <td class="col-header">THÀNH TIỀN</td>
+                        <td class="col-header">THỰC THU</td>
+                        <td class="col-header">NỢ</td>
+                        <td class="col-header">GHI CHÚ</td>
+                    </tr>`;
+
+                    let groupTotal = 0;
+
+                    rows.forEach(row => {
+                        let d = String(row['Dài'] || '').trim();
+                        let r = String(row['Rộng'] || '').trim();
+                        let dt = String(row['Diện tích'] || '').trim();
+                        let dienTichText = dt;
+                        if(d !== '' && r !== '') dienTichText = `${d} x ${r} = ${dt}`;
+                        
+                        let thanhTienStr = row['Thành tiền'] || '';
+                        let num = parseInt(String(thanhTienStr).replace(/[^0-9]/g, ''));
+                        let formattedThanhTien = isNaN(num) ? thanhTienStr : num.toLocaleString('vi-VN');
+                        if(!isNaN(num)) {
+                            groupTotal += num;
+                            grandTotal += num;
+                        }
+
+                        let ghiChuText = String(row['Trạng thái'] || row['Trạng Thái'] || '').trim();
+                        let note = String(row['Ghi chú'] || '').trim();
+                        if (ghiChuText.toLowerCase() === 'chưa đóng') ghiChuText = '';
+                        if (note !== '') {
+                            ghiChuText = ghiChuText ? `${ghiChuText} - ${note}` : note;
+                        }
+
+                        excelHtml += `
+                        <tr>
+                            <td class="text-center">${row['Số lô'] || row['Số Lô'] || ''}</td>
+                            <td class="text-center">${row['STT'] || ''}</td>
+                            <td>${row['Họ và tên'] || ''}</td>
+                            <td class="text-center">${row['Ngành hàng'] || ''}</td>
+                            <td class="text-center">${dienTichText}</td>
+                            <td class="text-center">${row['Mức thu'] || ''}</td>
+                            <td class="text-right">${formattedThanhTien}</td>
+                            <td></td>
+                            <td></td>
+                            <td class="text-center">${ghiChuText}</td>
+                        </tr>`;
+                    });
+
+                    excelHtml += `
+                    <tr>
+                        <td colspan="6" class="bold text-center">Tổng Cộng:</td>
+                        <td class="bold text-right">${groupTotal.toLocaleString('vi-VN')}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr><td colspan="10" class="no-border"></td></tr>
+                    `;
+                });
+
+                excelHtml += `
+                <tr>
+                    <td colspan="6" class="bold text-center">TỔNG ${titleText.replace('NỢ ', '')} ĐÃ ĐÓNG:</td>
+                    <td class="bold text-right">${grandTotal.toLocaleString('vi-VN')}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr><td colspan="10" class="no-border"></td></tr>
+                <tr><td colspan="10" class="no-border"></td></tr>
+                `;
+
+                excelHtml += `</table>`;
+            });
+
+            excelHtml += `</body></html>`;
+
+            let blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Bao_Cao_Thu_Tien_${currentSheetName}.xls`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
