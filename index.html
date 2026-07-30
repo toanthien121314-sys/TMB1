@@ -907,6 +907,7 @@
                             rowData['Thành tiền'] = newTien; 
                             rowData['Ghi chú'] = newNote; 
                             renderTable(); 
+                            Swal.close();
                             showCustomToast('Cập nhật thành công!', 'success');
                         } else { 
                             Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
@@ -989,6 +990,7 @@
                                 if(res.success) {
                                     rowData[selectedColumn] = newValue; 
                                     renderTable(); 
+                                    Swal.close();
                                     showCustomToast('Đã lưu thay đổi!', 'success');
                                 } else { 
                                     Swal.fire({title: 'Lỗi!', text: res.message, icon: 'error', scrollbarPadding: false}); 
