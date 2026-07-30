@@ -457,7 +457,8 @@
             ds: [], 
             current: [], 
             closedList: [], 
-            closedData: {} 
+            closedData: {},
+            currentSheetName: "" 
         };
         
         let globalData = []; 
@@ -510,6 +511,7 @@
                 
                 if(resCurrent.success) {
                     store.current = resCurrent.data;
+                    store.currentSheetName = resCurrent.sheetName; 
                     currentSheetName = resCurrent.sheetName; 
                 }
                 
@@ -680,6 +682,7 @@
             document.getElementById('dateInput').style.display = 'none';
             
             globalData = store.current;
+            currentSheetName = store.currentSheetName; 
             updateTableTitle();
             renderTable();
         }
@@ -731,6 +734,7 @@
                 globalData = store.ds;
             } else {
                 globalData = store.current;
+                currentSheetName = store.currentSheetName; 
             }
             
             updateTableTitle();
@@ -1072,7 +1076,6 @@
                         tbodyHtml += `</tr>`;
                     });
 
-                    // --- ĐÂY LÀ DÒNG LỆNH ĐÃ ĐƯỢC CHỈNH SỬA ĐỂ HIỆN TỔNG TRONG DANH SÁCH CHỐT ---
                     if (currentViewMode !== 'ds' && titleText !== "") {
                         let subTotalText = isDebt ? `Tổng nợ tháng ${debtMonth} năm ${debtYear}` : `Tổng tháng ${extractedMonth} năm ${extractedYear}`;
                         tbodyHtml += `
