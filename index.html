@@ -404,7 +404,8 @@
 <body>
 
     <div id="startup-loading">
-        <img src="./Loading_PacMan.svg" alt="Loading...">
+        <!-- Chú ý: Đảm bảo link ảnh Loading_PacMan.svg vẫn hoạt động trong môi trường của bạn -->
+        <img src="./Loading_PacMan.svg" alt="Loading..." onerror="this.style.display='none'">
         <div id="loading-text">Đang đồng bộ dữ liệu hệ thống, vui lòng chờ...</div>
     </div>
 
@@ -418,6 +419,10 @@
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Xem đã đóng</button>
             <button class="menu-btn btn-unpaid" onclick="loadData('unpaid')">⚠️ Xem chưa đóng</button>
             <button class="menu-btn btn-closed" onclick="loadClosedList()">📁 Danh sách đã chốt</button>
+            
+            <!-- NÚT LƯU ĐỒNG BỘ MỚI THÊM -->
+            <button class="menu-btn" style="background-color: #fd7e14; grid-column: span 2; padding: 20px; font-size: 18px;" onclick="syncCache()">🔄 ĐỒNG BỘ SHEET ➔ JSON</button>
+            
             <button class="menu-btn btn-action" onclick="loadData('mark_paid')">💳 Đóng tiền</button>
             <button class="menu-btn btn-rep" onclick="loadRepSearch()">🔍 Tra cứu theo Đại diện</button>
             <button class="menu-btn btn-chotso" onclick="executeChotSo()">🔒 CHỐT SỔ & CHUYỂN KỲ MỚI</button>
@@ -459,7 +464,8 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwWUGXX56Jht_cdSEnwt5Z_ZPfJGkIkC7buvQMSQCX8jAKbaBFQJ79GdiqRnDmkorI0/exec';
+        // CẬP NHẬT LẠI URL WEB APP CỦA BẠN VÀO ĐÂY SAU KHI TRIỂN KHAI PHIÊN BẢN MỚI
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwgeqtt7uwSQC59awto4nh8ApY3KltSxf-tVaL-NETZlzRWYDTZDz0SJ4S9xKZMuHqU/exec';
         
         let store = { 
             ds: [], 
@@ -678,6 +684,52 @@
                         }); 
                     });
                 }
+            });
+        }
+
+        // --- HÀM MỚI: ĐỒNG BỘ CACHE JSON ---
+        function syncCache() {
+            Swal.fire({
+                title: 'Đang tạo bộ nhớ đệm (JSON)...',
+                html: 'Hệ thống đang đồng bộ dữ liệu từ Google Sheets.<br>Vui lòng đợi vài giây!',
+                allowOutsideClick: false,
+                scrollbarPadding: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ updateType: 'sync_to_json' })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if(res.success) {
+                    Swal.fire({
+                        title: 'Thành công!',
+                        text: 'File JSON đã được cập nhật. Tốc độ tải trang giờ sẽ rất nhanh.',
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        scrollbarPadding: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Lỗi đồng bộ!',
+                        text: res.message,
+                        icon: 'error',
+                        scrollbarPadding: false
+                    });
+                }
+            })
+            .catch(err => {
+                Swal.fire({
+                    title: 'Lỗi kết nối mạng!',
+                    text: 'Không thể kết nối đến máy chủ.',
+                    icon: 'error',
+                    scrollbarPadding: false
+                });
             });
         }
 
