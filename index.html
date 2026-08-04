@@ -486,7 +486,7 @@
                 inputLabel: 'Vui lòng nhập mã PIN bảo mật',
                 inputPlaceholder: '****',
                 allowOutsideClick: false, 
-                allowEscapeKey: false,    
+                allowEscapeKey: false,   
                 confirmButtonText: 'Mở khóa',
                 confirmButtonColor: '#343a40',
                 scrollbarPadding: false,
@@ -504,7 +504,8 @@
                 }
             });
         }
-// Hàm bao bọc fetch: Nếu Google văng lỗi Drive 404, nó sẽ tự động đợi 1 giây và thử lại (tối đa 3 lần)
+
+        // Hàm bao bọc fetch chống Google lag
         async function fetchWithRetry(url, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
@@ -514,8 +515,8 @@
                     return data;
                 } catch (err) {
                     console.warn(`Lỗi kết nối từ Google (Lần thử ${i + 1}/${retries}). Tự động thử lại...`);
-                    if (i === retries - 1) throw err; // Hết 3 lần vẫn lỗi thì mới chịu thua
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Nghỉ 1 giây
+                    if (i === retries - 1) throw err;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         }
@@ -524,35 +525,32 @@
             try {
                 let timeStamp = new Date().getTime(); 
                 
-                // VẪN DÙNG PROMISE.ALL NHƯ CŨ để giữ nguyên tốc độ load không có khoảng chờ.
-                // Nhưng truyền qua fetchWithRetry để được bảo vệ.
-                let pDs = fetchWithRetry(API_URL + "?type=ds&t=" + timeStamp);
-                let pCurrent = fetchWithRetry(API_URL + "?type=current&t=" + timeStamp);
-                let pClosedList = fetchWithRetry(API_URL + "?type=closed_list&t=" + timeStamp);
-
-                let [resDs, resCurrent, resClosedList] = await Promise.all([pDs, pCurrent, pClosedList]);
-
-                if(resDs.success) {
+                // 1. CHẠY TUẦN TỰ: Đợi tải xong Danh sách mới tải tiếp Current
+                let resDs = await fetchWithRetry(API_URL + "?type=ds&t=" + timeStamp);
+                if(resDs && resDs.success) {
                     store.ds = resDs.data;
                 }
                 
-                if(resCurrent.success) {
+                // 2. Tải Current
+                let resCurrent = await fetchWithRetry(API_URL + "?type=current&t=" + timeStamp);
+                if(resCurrent && resCurrent.success) {
                     store.current = resCurrent.data;
                     store.currentSheetName = resCurrent.sheetName; 
                     currentSheetName = resCurrent.sheetName; 
                 }
                 
-                if(resClosedList.success) {
+                // 3. Tải danh sách thư mục đã chốt
+                let resClosedList = await fetchWithRetry(API_URL + "?type=closed_list&t=" + timeStamp);
+                if(resClosedList && resClosedList.success) {
                     store.closedList = resClosedList.data;
-                    let closedPromises = store.closedList.map(item => 
-                        fetchWithRetry(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name + "&t=" + timeStamp)
-                        .then(res => {
-                            if(res.success) {
-                                store.closedData[item.id] = { sheetName: res.sheetName, data: res.data };
-                            }
-                        })
-                    );
-                    await Promise.all(closedPromises);
+                    
+                    // 4. Vòng lặp lấy chi tiết từng file chốt (Cũng xếp hàng lần lượt)
+                    for (let item of store.closedList) {
+                        let res = await fetchWithRetry(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name + "&t=" + timeStamp);
+                        if(res && res.success) {
+                            store.closedData[item.id] = { sheetName: res.sheetName, data: res.data };
+                        }
+                    }
                 }
                 
                 let loader = document.getElementById('startup-loading');
