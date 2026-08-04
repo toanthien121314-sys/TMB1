@@ -459,7 +459,7 @@
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzHOCOrWewwO_g25xoIvHRxyBQ9LP4XZNmHBQGmDyc-nfybFRz249GFYddB8lqJirsG/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyBT8senHCsnFqEWTgMxhACJcYoTMUlf9fabH5GkSmu2NE3AXT0AfwMi3FGJVWpS_q8/exec';
         
         let store = { 
             ds: [], 
@@ -504,20 +504,33 @@
                 }
             });
         }
+// Hàm bao bọc fetch: Nếu Google văng lỗi Drive 404, nó sẽ tự động đợi 1 giây và thử lại (tối đa 3 lần)
+        async function fetchWithRetry(url, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    let response = await fetch(url);
+                    if (!response.ok) throw new Error("HTTP Status: " + response.status);
+                    let data = await response.json();
+                    return data;
+                } catch (err) {
+                    console.warn(`Lỗi kết nối từ Google (Lần thử ${i + 1}/${retries}). Tự động thử lại...`);
+                    if (i === retries - 1) throw err; // Hết 3 lần vẫn lỗi thì mới chịu thua
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Nghỉ 1 giây
+                }
+            }
+        }
 
-window.onload = async function() {
+        window.onload = async function() {
             try {
                 let timeStamp = new Date().getTime(); 
                 
-                // Gọi API tuần tự từng bước một để Google không bị ngộp
-                let responseDs = await fetch(API_URL + "?type=ds&t=" + timeStamp);
-                let resDs = await responseDs.json();
-                
-                let responseCurrent = await fetch(API_URL + "?type=current&t=" + timeStamp);
-                let resCurrent = await responseCurrent.json();
-                
-                let responseClosedList = await fetch(API_URL + "?type=closed_list&t=" + timeStamp);
-                let resClosedList = await responseClosedList.json();
+                // VẪN DÙNG PROMISE.ALL NHƯ CŨ để giữ nguyên tốc độ load không có khoảng chờ.
+                // Nhưng truyền qua fetchWithRetry để được bảo vệ.
+                let pDs = fetchWithRetry(API_URL + "?type=ds&t=" + timeStamp);
+                let pCurrent = fetchWithRetry(API_URL + "?type=current&t=" + timeStamp);
+                let pClosedList = fetchWithRetry(API_URL + "?type=closed_list&t=" + timeStamp);
+
+                let [resDs, resCurrent, resClosedList] = await Promise.all([pDs, pCurrent, pClosedList]);
 
                 if(resDs.success) {
                     store.ds = resDs.data;
@@ -532,16 +545,14 @@ window.onload = async function() {
                 if(resClosedList.success) {
                     store.closedList = resClosedList.data;
                     let closedPromises = store.closedList.map(item => 
-                        fetch(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name + "&t=" + timeStamp)
-                        .then(r => r.json())
+                        fetchWithRetry(API_URL + "?type=closed_data&fileId=" + item.id + "&fileName=" + item.name + "&t=" + timeStamp)
                         .then(res => {
                             if(res.success) {
                                 store.closedData[item.id] = { sheetName: res.sheetName, data: res.data };
                             }
                         })
                     );
-                    // Dòng này giữ lại Promise.all được vì nó chỉ chạy khi bấm vào "Danh sách đã chốt"
-                    await Promise.all(closedPromises); 
+                    await Promise.all(closedPromises);
                 }
                 
                 let loader = document.getElementById('startup-loading');
@@ -553,7 +564,7 @@ window.onload = async function() {
                 }, 500);
 
             } catch (error) {
-                console.error("Lỗi tải dữ liệu:", error);
+                console.error("Hệ thống Google Apps Script phản hồi quá chậm:", error);
                 document.getElementById('loading-text').innerText = "Lỗi kết nối mạng! Vui lòng tải lại trang.";
                 document.getElementById('loading-text').style.color = "red";
             }
