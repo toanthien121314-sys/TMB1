@@ -505,14 +505,19 @@
             });
         }
 
-        window.onload = async function() {
+window.onload = async function() {
             try {
                 let timeStamp = new Date().getTime(); 
-                let pDs = fetch(API_URL + "?type=ds&t=" + timeStamp).then(r => r.json());
-                let pCurrent = fetch(API_URL + "?type=current&t=" + timeStamp).then(r => r.json());
-                let pClosedList = fetch(API_URL + "?type=closed_list&t=" + timeStamp).then(r => r.json());
-
-                let [resDs, resCurrent, resClosedList] = await Promise.all([pDs, pCurrent, pClosedList]);
+                
+                // Gọi API tuần tự từng bước một để Google không bị ngộp
+                let responseDs = await fetch(API_URL + "?type=ds&t=" + timeStamp);
+                let resDs = await responseDs.json();
+                
+                let responseCurrent = await fetch(API_URL + "?type=current&t=" + timeStamp);
+                let resCurrent = await responseCurrent.json();
+                
+                let responseClosedList = await fetch(API_URL + "?type=closed_list&t=" + timeStamp);
+                let resClosedList = await responseClosedList.json();
 
                 if(resDs.success) {
                     store.ds = resDs.data;
@@ -535,7 +540,8 @@
                             }
                         })
                     );
-                    await Promise.all(closedPromises);
+                    // Dòng này giữ lại Promise.all được vì nó chỉ chạy khi bấm vào "Danh sách đã chốt"
+                    await Promise.all(closedPromises); 
                 }
                 
                 let loader = document.getElementById('startup-loading');
@@ -547,6 +553,7 @@
                 }, 500);
 
             } catch (error) {
+                console.error("Lỗi tải dữ liệu:", error);
                 document.getElementById('loading-text').innerText = "Lỗi kết nối mạng! Vui lòng tải lại trang.";
                 document.getElementById('loading-text').style.color = "red";
             }
