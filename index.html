@@ -10,6 +10,8 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
+    <link rel="icon" href="data:,"> <!-- Xóa lỗi 404 favicon vô hại -->
+    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         /* --- ÉP DUY NHẤT 1 THANH CUỘN VÀ CHỐNG GIẬT MÀN HÌNH --- */
@@ -141,7 +143,7 @@
         .btn-paid { background-color: #28a745; }
         .btn-unpaid { background-color: #ffc107; color: #333; }
         .btn-closed { background-color: white; color: #333; border: 2px solid #ccc; }
-.btn-action { background-color: #dc3545; grid-column: span 2; padding: 15px; font-size: 16px; }
+        .btn-action { background-color: #dc3545; grid-column: span 2; padding: 15px; font-size: 16px; }
         .btn-rep { background-color: #6f42c1; grid-column: span 2; padding: 15px; font-size: 16px; }
         .btn-chotso { background-color: #343a40; grid-column: span 2; padding: 15px; font-size: 16px; }
 
@@ -412,7 +414,7 @@
 
     <div id="screenMenu" style="display: none;">
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
-<div class="menu-container">
+        <div class="menu-container">
             <button class="menu-btn btn-ds" onclick="loadData('ds')">📋 Danh sách mặt bằng</button>
             <button class="menu-btn btn-all" onclick="loadData('all')">📑 Danh sách thu</button>
             <button class="menu-btn btn-paid" onclick="loadData('paid')">✅ Xem đã đóng</button>
@@ -463,7 +465,7 @@
 
     <script>
         // CẬP NHẬT LẠI URL WEB APP CỦA BẠN VÀO ĐÂY SAU KHI TRIỂN KHAI PHIÊN BẢN MỚI
-        const API_URL = 'https://script.google.com/macros/s/AKfycbynnMjZ7iO5veVCZ5vvQ96V5yui97iLswaigQtOjXyDyMciZkiENJeHQ-XjQU3eIUH_/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxllimGAP-pA34rRRNkQ0RX2qZGM5AJm-sg3rWjZ8HPx-aelhJko_pfjT61XjVTGiQR/exec';
         
         let store = { 
             ds: [], 
@@ -476,6 +478,31 @@
         let globalData = []; 
         let currentSheetName = ""; 
         let currentViewMode = 'all'; 
+
+        // =========================================================================
+        // CÔNG NGHỆ HÀNG ĐỢI API (QUEUE): GIÚP CHỐNG NGHẼN SERVER GOOGLE KHI BẤM LIÊN TỤC
+        // =========================================================================
+        let apiQueue = Promise.resolve();
+        function sendApiRequest(payload) {
+            return new Promise((resolve, reject) => {
+                apiQueue = apiQueue.then(async () => {
+                    try {
+                        let response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error("HTTP " + response.status);
+                        let data = await response.json();
+                        resolve(data);
+                    } catch (err) {
+                        reject(err);
+                    }
+                }).catch(err => {
+                    // Bắt lỗi ngầm để chuỗi Queue không bị đứt, các lệnh sau vẫn tiếp tục được gửi
+                });
+            });
+        }
 
         function requireSecurityPIN() {
             Swal.fire({
@@ -668,7 +695,7 @@
             });
         }
 
-function syncCache() {
+        function syncCache() {
             Swal.fire({
                 title: '⚠️ XÁC NHẬN ĐỒNG BỘ',
                 html: "<div style='text-align:left; font-size:15px; margin-top:10px; margin-bottom: 15px;'>" +
@@ -772,7 +799,12 @@ function syncCache() {
         }
 
         async function loadClosedData(fileId, fileName) {
-            Swal.fire({ title: 'Đang tải dữ liệu...', allowOutsideClick: false, scrollbarPadding: false, didOpen: () => { Swal.showLoading(); } });
+            Swal.fire({ 
+                title: 'Đang tải dữ liệu...', 
+                allowOutsideClick: false, 
+                scrollbarPadding: false, 
+                didOpen: () => { Swal.showLoading(); } 
+            });
 
             if (!store.closedData[fileId]) {
                 try {
@@ -1306,6 +1338,10 @@ function syncCache() {
             }
         }
 
+        // =========================================================================
+        // CÁC HÀM CẬP NHẬT TỨC THỜI (OPTIMISTIC UI) VÀ GỬI LỆNH QUA QUEUE NGẦM
+        // =========================================================================
+
         function applyDiscount(rowSheetName, rowIndex) {
             let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
             let currentTien = rowData['Thành tiền'] !== undefined ? rowData['Thành tiền'] : '';
@@ -1350,6 +1386,7 @@ function syncCache() {
                     let newTien = result.value.tien; 
                     let newNote = result.value.note;
 
+                    // HIỂN THỊ Loading và đẩy API vào Queue
                     Swal.fire({ 
                         title: 'Đang xử lý...', 
                         allowOutsideClick: false,
@@ -1359,12 +1396,13 @@ function syncCache() {
                         } 
                     });
 
-                    fetch(API_URL, {
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'discount', tien: newTien, note: newNote })
+                    sendApiRequest({ 
+                        sheetName: rowSheetName, 
+                        rowIndex: rowIndex, 
+                        updateType: 'discount', 
+                        tien: newTien, 
+                        note: newNote 
                     })
-                    .then(r => r.json())
                     .then(res => {
                         if (res.success) {
                             rowData['Thành tiền'] = newTien; 
@@ -1454,12 +1492,13 @@ function syncCache() {
                                 } 
                             });
 
-                            fetch(API_URL, {
-                                method: 'POST', 
-                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'edit_cell', colName: selectedColumn, value: newValue })
+                            sendApiRequest({ 
+                                sheetName: rowSheetName, 
+                                rowIndex: rowIndex, 
+                                updateType: 'edit_cell', 
+                                colName: selectedColumn, 
+                                value: newValue 
                             })
-                            .then(r => r.json())
                             .then(res => {
                                 if(res.success) {
                                     rowData[selectedColumn] = newValue; 
@@ -1513,38 +1552,42 @@ function syncCache() {
 
                     let noteElement = document.getElementById(`note-${rowSheetName}-${rowIndex}`);
                     let oldText = noteElement.innerText; 
-                    noteElement.innerText = "⏳..."; 
+                    
+                    // --- CẬP NHẬT GIAO DIỆN LẬP TỨC (OPTIMISTIC UI) ---
+                    noteElement.innerText = newNote;
+                    rowData['Ghi chú'] = newNote;
+                    showCustomToast('Đã lưu ghi chú!', 'success');
 
-                    fetch(API_URL, {
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'note', value: newNote })
+                    // --- ĐẨY LỆNH XUỐNG HÀNG ĐỢI ---
+                    sendApiRequest({ 
+                        sheetName: rowSheetName, 
+                        rowIndex: rowIndex, 
+                        updateType: 'note', 
+                        value: newNote 
                     })
-                    .then(r => r.json())
                     .then(res => {
-                        if(res.success) {
-                            rowData['Ghi chú'] = newNote; 
-                            noteElement.innerText = newNote;
-                            Swal.close(); 
-                            showCustomToast('Đã lưu ghi chú!', 'success');
-                        } else { 
+                        if(!res.success) {
+                            // Rollback nếu thất bại
+                            rowData['Ghi chú'] = oldText;
+                            noteElement.innerText = oldText;
                             Swal.fire({
-                                title: 'Lỗi!', 
+                                title: 'Lỗi lưu ghi chú!', 
                                 text: res.message, 
                                 icon: 'error', 
                                 scrollbarPadding: false
                             }); 
-                            noteElement.innerText = oldText; 
                         }
                     })
                     .catch(err => { 
+                        // Rollback nếu đứt mạng
+                        rowData['Ghi chú'] = oldText;
+                        noteElement.innerText = oldText;
                         Swal.fire({
-                            title: 'Lỗi!', 
-                            text: 'Không kết nối được.', 
+                            title: 'Lỗi mạng!', 
+                            text: 'Ghi chú chưa được lưu vào máy chủ.', 
                             icon: 'error', 
                             scrollbarPadding: false
                         }); 
-                        noteElement.innerText = oldText; 
                     });
                 }
             });
@@ -1610,69 +1653,95 @@ function syncCache() {
 
         function executePaymentRequest(rowSheetName, rowIndex, btnElement, finalStatus, isCollecting) {
             let originalText = btnElement.innerText;
-            btnElement.innerText = "⏳..."; 
-            btnElement.disabled = true;
+            let originalClass = btnElement.className;
+            let originalOnclick = btnElement.getAttribute('onclick');
+            
+            let tr = btnElement.closest('tr');
+            let badge = tr.querySelector('.status-badge');
+            let originalBadgeText = badge ? badge.innerText : '';
+            let originalBadgeClass = badge ? badge.className : '';
+            
+            // --- CẬP NHẬT UI TRƯỚC (BẤM LÀ ĐỔI MÀU LUÔN) ---
+            btnElement.disabled = true; // Khóa tạm để chống nháy đúp
+            
+            if (isCollecting) {
+                btnElement.innerText = "Hoàn tác"; 
+                btnElement.className = "undo-btn";
+                btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
+                if (badge) { 
+                    badge.innerText = finalStatus; 
+                    badge.className = 'status-badge status-paid'; 
+                }
+                tr.classList.add('row-success');
+                showCustomToast('Đã ghi nhận ĐÓNG TIỀN', 'success');
+            } else {
+                btnElement.innerText = "Đóng tiền"; 
+                btnElement.className = "mark-btn";
+                btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'PAY')`);
+                if (badge) { 
+                    badge.innerText = 'chưa đóng'; 
+                    badge.className = 'status-badge status-unpaid'; 
+                }
+                tr.classList.remove('row-success');
+                showCustomToast('Đã HOÀN TÁC', 'info');
+            }
 
-            fetch(API_URL, {
-                method: 'POST', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ sheetName: rowSheetName, rowIndex: rowIndex, updateType: 'status', value: finalStatus })
+            // Mở khóa nút ngay lập tức để được bấm liên tiếp người khác
+            setTimeout(() => { 
+                btnElement.disabled = false; 
+            }, 300);
+
+            let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
+            if(rowData) {
+                rowData['Trạng thái'] = finalStatus;
+            }
+
+            // --- GỬI API XUỐNG HÀNG ĐỢI NGẦM ---
+            sendApiRequest({ 
+                sheetName: rowSheetName, 
+                rowIndex: rowIndex, 
+                updateType: 'status', 
+                value: finalStatus 
             })
-            .then(r => r.json())
             .then(res => {
-                if(res.success) {
-                    let rowData = globalData.find(r => r._rowIndex === rowIndex && r._sheetName === rowSheetName);
-                    
-                    if(rowData) {
-                        rowData['Trạng thái'] = finalStatus;
-                    }
-                    
-                    let tr = btnElement.closest('tr');
-                    let badge = tr.querySelector('.status-badge');
-                    
-                    if (badge) { 
-                        badge.innerText = finalStatus; 
-                        badge.className = isCollecting ? 'status-badge status-paid' : 'status-badge status-unpaid'; 
-                    }
-                    
-                    if (isCollecting) {
-                        btnElement.innerText = "Hoàn tác"; 
-                        btnElement.className = "undo-btn";
-                        btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'chưa đóng')`);
-                        
-                        if(!tr.style.backgroundColor) {
-                            tr.classList.add('row-success'); 
-                        }
-                        showCustomToast('Đã thu tiền!', 'success');
-                    } else {
-                        btnElement.innerText = "Đóng tiền"; 
-                        btnElement.className = "mark-btn";
-                        btnElement.setAttribute('onclick', `updateStatus('${rowSheetName}', ${rowIndex}, this, 'PAY')`);
-                        tr.classList.remove('row-success'); 
-                        showCustomToast('Đã hoàn tác!', 'info');
-                    }
-                    btnElement.disabled = false;
-                } else { 
+                if(!res.success) {
+                    rollbackUI();
                     Swal.fire({
-                        title: 'Lỗi!', 
+                        title: 'Lỗi lưu dữ liệu!', 
                         text: res.message, 
                         icon: 'error', 
                         scrollbarPadding: false
                     }); 
-                    btnElement.innerText = originalText; 
-                    btnElement.disabled = false; 
                 }
             })
             .catch(err => { 
+                rollbackUI();
                 Swal.fire({
-                    title: 'Lỗi!', 
-                    text: 'Vui lòng kiểm tra mạng.', 
+                    title: 'Lỗi mạng!', 
+                    text: 'Mất kết nối với Google. Dữ liệu bị từ chối lưu.', 
                     icon: 'error', 
                     scrollbarPadding: false
                 }); 
-                btnElement.innerText = originalText; 
-                btnElement.disabled = false; 
             });
+
+            // Hàm quay xe nếu API thực sự thất bại
+            function rollbackUI() {
+                btnElement.innerText = originalText;
+                btnElement.className = originalClass;
+                btnElement.setAttribute('onclick', originalOnclick);
+                if (badge) { 
+                    badge.innerText = originalBadgeText; 
+                    badge.className = originalBadgeClass; 
+                }
+                if (isCollecting) {
+                    tr.classList.remove('row-success');
+                } else {
+                    tr.classList.add('row-success');
+                }
+                if(rowData) {
+                    rowData['Trạng thái'] = originalBadgeText;
+                }
+            }
         }
 
         function exportToExcel() {
