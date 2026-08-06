@@ -411,6 +411,9 @@
     </div>
 
     <div id="custom-toast-container"></div>
+    <div id="sync-status" style="display: none; position: fixed; bottom: 20px; left: 20px; background-color: #ffc107; color: #333; padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 14px; z-index: 999999; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+        ⏳ Đang lưu dữ liệu ngầm (<span id="sync-count">0</span>)...
+    </div>
 
     <div id="screenMenu" style="display: none;">
         <h2 id="mainAppTitle">Thu diện tích bán hàng tại chợ Phước Hậu điểm 1</h2> 
@@ -479,11 +482,48 @@
         let currentSheetName = ""; 
         let currentViewMode = 'all'; 
 
-        // =========================================================================
-        // CÔNG NGHỆ HÀNG ĐỢI API (QUEUE): GIÚP CHỐNG NGHẼN SERVER GOOGLE KHI BẤM LIÊN TỤC
+// =========================================================================
+        // CÔNG NGHỆ HÀNG ĐỢI API (QUEUE) KẾT HỢP CHỐNG ĐÓNG TRANG MẤT DỮ LIỆU
         // =========================================================================
         let apiQueue = Promise.resolve();
+        let pendingRequests = 0; // Biến đếm số lượng lệnh đang chờ gửi
+
+        // Cập nhật hiển thị trạng thái lưu ngầm
+        function updateSyncStatus() {
+            let syncDiv = document.getElementById('sync-status');
+            let syncCount = document.getElementById('sync-count');
+            
+            if (pendingRequests > 0) {
+                syncCount.innerText = pendingRequests;
+                syncDiv.style.backgroundColor = '#ffc107'; // Màu vàng cảnh báo
+                syncDiv.style.color = '#333';
+                syncDiv.innerHTML = `⏳ Đang đồng bộ lên máy chủ (<span id="sync-count">${pendingRequests}</span>)...`;
+                syncDiv.style.display = 'block';
+            } else {
+                syncDiv.style.backgroundColor = '#28a745'; // Màu xanh thành công
+                syncDiv.style.color = '#fff';
+                syncDiv.innerHTML = `✅ Đã lưu tất cả!`;
+                // Tự động ẩn đi sau 2 giây
+                setTimeout(() => {
+                    if (pendingRequests === 0) syncDiv.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Bắt sự kiện người dùng cố tình tắt/tải lại trang
+        window.addEventListener('beforeunload', function (e) {
+            if (pendingRequests > 0) {
+                // Hiển thị cảnh báo mặc định của trình duyệt
+                let confirmationMessage = 'Dữ liệu đang được đồng bộ lên máy chủ. Nếu đóng trang bây giờ, dữ liệu vừa nhập có thể bị mất!';
+                (e || window.event).returnValue = confirmationMessage;
+                return confirmationMessage;
+            }
+        });
+
         function sendApiRequest(payload) {
+            pendingRequests++; // Tăng biến đếm khi có lệnh mới
+            updateSyncStatus(); // Cập nhật giao diện góc màn hình
+
             return new Promise((resolve, reject) => {
                 apiQueue = apiQueue.then(async () => {
                     try {
@@ -497,9 +537,14 @@
                         resolve(data);
                     } catch (err) {
                         reject(err);
+                    } finally {
+                        pendingRequests--; // Giảm biến đếm khi hoàn thành (dù thành công hay thất bại)
+                        updateSyncStatus();
                     }
                 }).catch(err => {
-                    // Bắt lỗi ngầm để chuỗi Queue không bị đứt, các lệnh sau vẫn tiếp tục được gửi
+                    // Bắt lỗi ngầm để chuỗi Queue không bị đứt
+                    pendingRequests--; 
+                    updateSyncStatus();
                 });
             });
         }
